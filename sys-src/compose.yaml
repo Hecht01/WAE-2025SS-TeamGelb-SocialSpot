@@ -1,0 +1,35 @@
+services:
+  postgres:
+    restart: unless-stopped
+    image: postgres:alpine
+    ports:
+      - 5432:5432
+    volumes:
+      - pgdata:/data/postgres
+      - ./database/init:/docker-entrypoint-initdb.d
+    env_file:
+      - .env
+    healthcheck:
+      test:  pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB
+      interval: 5s
+      timeout: 5s
+      retries: 5
+  webserver:
+    restart: unless-stopped
+    build: ./app/backend
+    env_file:
+      - .env
+    ports:
+      - 3000:3000
+    depends_on:
+      postgres:
+        condition: service_healthy
+  webapp:
+    restart: unless-stopped
+    build: ./app/frontend/SocialSpot
+    env_file:
+      - .env
+    ports:
+      - 8080:8080
+volumes:
+  pgdata:
