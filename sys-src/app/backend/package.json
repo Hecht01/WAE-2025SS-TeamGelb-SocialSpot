@@ -5,13 +5,21 @@
   "main": "src/index.js",
   "scripts": {
     "compile": "tsc",
-    "dev": "node ./src/index.js",
-    "start": "npm run compile && nodemon ./dist/index.js",
+    "dev": "nodemon src/index",
+    "start": "npm run compile && nodemon src/index",
     "test": "jest"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "express": "^5.1.0"
+    "@apollo/server": "^4.12.1",
+    "@graphql-tools/mock": "^9.0.22",
+    "@graphql-tools/schema": "^10.0.23",
+    "graphql": "^16.11.0",
+    "graphql-tag": "^2.12.6"
+  },
+  "devDependencies": {
+    "dotenv": "^16.0.0",
+    "nodemon": "^3.0.1"
   }
 }
