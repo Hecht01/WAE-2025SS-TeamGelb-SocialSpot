@@ -27,6 +27,11 @@ const mocks = {
         type: () => "Party",
         thumbnail: () => "https://www.bundestag.de/resource/image/218498/16x9/1460/822/e0c4580af18d49e18c422437b47d7d14/FB55CF5ACCABD2CCF08FB2B61D466259/westportal01.jpg",
     }),
+    User: () => ({
+        id: () => "user_01",
+        name: () => "Olaf Scholz",
+        email: () => "olaf.scholz@gmail.com"
+    })
 };
 
 
