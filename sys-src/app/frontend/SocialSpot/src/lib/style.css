@@ -35,6 +35,11 @@
     transition: background 0.2s, color 0.2s;
 }
 
+.sosp-header {
+    color:#D7264E;
+    font-weight: bold;
+}
+
 .sosp-button:hover {
     background: #D7264E;
     color:rgb(255, 255, 255);

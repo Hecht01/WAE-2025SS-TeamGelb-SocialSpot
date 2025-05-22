@@ -10,7 +10,7 @@
     const map = L.map(mapContainer).setView([51.505, -0.09], 13);
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '© OpenStreetMap contributors'
+      attribution: '© OpenStreetMap contributors',
     }).addTo(map);
 
     L.marker([51.505, -0.09])
@@ -18,14 +18,29 @@
       .bindPopup('Du bist hier!')
       .openPopup();
   });
+
 </script>
 
 <style>
-  #map {
-    height: 400px;
-    width: 100%;
-    border-radius: 12px;
+  .page {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 2rem;
+    gap: 1rem;
   }
+
+  .map-container {
+    width: 90%;
+    max-width: 1000px;
+    height: 600px;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  }
+
 </style>
 
-<div bind:this={mapContainer} id="map"></div>
+<div class="page">
+  <div class="map-container" bind:this={mapContainer}></div>
+</div>
