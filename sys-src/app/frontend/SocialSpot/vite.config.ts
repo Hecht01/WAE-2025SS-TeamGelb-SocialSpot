@@ -2,11 +2,15 @@ import { svelteTesting } from '@testing-library/svelte/vite';
 import { sveltekit } from '@sveltejs/kit/vite';
 import { defineConfig } from 'vite';
 import dotenv from 'dotenv';
+import tailwindcss from '@tailwindcss/vite';
 
 dotenv.config({path: '../../../.env'});
 
 export default defineConfig({
-	plugins: [sveltekit()],
+	plugins: [
+		tailwindcss(),
+		sveltekit(),
+	],
 	server: {
 		host: true,
 		port: 8080

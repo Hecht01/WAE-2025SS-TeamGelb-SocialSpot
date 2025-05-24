@@ -32,7 +32,10 @@
 		"vitest": "^3.0.0"
 	},
 	"dependencies": {
+		"@tailwindcss/vite": "^4.1.7",
 		"dotenv": "^16.5.0",
-		"leaflet": "^1.9.4"
+		"leaflet": "^1.9.4",
+		"lucide-svelte": "^0.511.0",
+		"tailwindcss": "^4.1.7"
 	}
 }

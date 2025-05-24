@@ -52,7 +52,7 @@
         <img src ="/logo_no_background.png" alt = "Social Spot Logo"/>
     </div>
     <nav>
-        <a href = "/">Home</a>
+        <a href = "/sys-src/app/frontend/SocialSpot/static">Home</a>
         <a href = "/map">Map</a>
         <a href = "/CreatePost">Create New Event</a>
         <a href = "/userProfile">My Profile</a>
