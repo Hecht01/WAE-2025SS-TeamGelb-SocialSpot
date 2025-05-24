@@ -2,11 +2,11 @@
   "name": "backend",
   "version": "1.0.0",
   "description": "",
-  "main": "src/index.js",
+  "main": "src/auth-server.js",
   "type": "module",
   "scripts": {
     "compile": "tsc",
-    "dev": "node ./src/index.js",
+    "dev": "node src/auth-server.js",
     "start": "npm run compile && nodemon ./dist/index.js",
     "test": "jest"
   },
