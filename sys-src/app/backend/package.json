@@ -2,16 +2,21 @@
   "name": "backend",
   "version": "1.0.0",
   "description": "",
-  "main": "src/index.js",
+  "main": "src/auth-server.js",
+  "type": "module",
   "scripts": {
     "compile": "tsc",
-    "dev": "node ./src/index.js",
+    "dev": "node src/auth-server.js",
     "start": "npm run compile && nodemon ./dist/index.js",
     "test": "jest"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "express": "^5.1.0"
+    "cookie-parser": "^1.4.7",
+    "dotenv": "^16.5.0",
+    "express": "^5.1.0",
+    "express-session": "^1.18.1",
+    "openid-client": "^6.5.0"
   }
 }
