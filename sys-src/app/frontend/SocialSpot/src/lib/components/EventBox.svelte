@@ -18,7 +18,7 @@
     </div>
     <div class="p-4 flex flex-col gap-2 text-[#1f1246] h-[22rem]">
         <div class="flex justify-between items-center">
-            <h2 class="text-lg font-semibold text-[#541a46]">{title}</h2>
+            <h2 class="text-lg font-bold text-[#541a46]">{title}</h2>
             <div class="flex gap-6 text-sm text-[#892246]">
                 <div class="flex items-center gap-1">
                     <Heart class="w-5 h-5 text-[#bf2b47] fill-[bf2b47]"/>
@@ -31,9 +31,10 @@
             </div>
         </div>
 
-        <p class="text-sm text-[#892246]">{place}: {startDate} - {endDate}, {startTime}</p>
-        <!-- line-clamp-2 cuts off the description after 2 rows and adds ... at the end -->
-        <p class="text-sm line-clamp-2">{description}</p>
+        <p class="text-sm text-[#892246]"><strong>Date:</strong> {startDate} - {endDate}; Time: {startTime}</p>
+        <p class="text-sm text-[#892246]"><strong>Place:</strong> {place}</p>
+        <!-- truncate cuts description off after one line and adds ... at the end if too long -->
+        <p class="text-sm truncate"><strong>Description:</strong> {description}</p>
         <button class="mt-auto self-start bg-[#bf2b47] text-[#fcfcfc] px-4 py-1 rounded hover:bg-[#892246] transition">Join</button>
     </div>
 </div>
