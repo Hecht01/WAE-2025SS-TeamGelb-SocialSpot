@@ -14,9 +14,6 @@ export default defineConfig({
 	server: {
 		port: 3000
 	},
-	define: {
-		__API_ADDRESS__: process.env.BACKEND_HOST || "http://localhost:4000",
-	},
 	test: {
 		workspace: [
 			{

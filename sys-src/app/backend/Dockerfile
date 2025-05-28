@@ -38,4 +38,5 @@ COPY . .
 EXPOSE 4000
 
 # Run the application.
-CMD npm run dev
+CMD ["node", "src/index.js"]
+CMD ["node", "src/auth-server.js"]
