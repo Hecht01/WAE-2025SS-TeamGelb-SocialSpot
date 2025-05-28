@@ -1,30 +1,7 @@
 <script>
     import EventFeed from '$lib/components/EventFeed.svelte';
-
-    // dummy event list - all events
+    // dummy event list - only Pride, Ren-Fair and Animal Shelter
     let events = [
-        {
-            image: '/exampleOpenMicNight.jpg',
-            title: 'Open Mic Night',
-            place: 'Amberg - Main Street 123',
-            description: 'Join us for an evening of music, poetry, comedy, and more at our open mic night. Whether you\'re performing or cheering from the crowd, it\'s a fun and welcoming space for all creatives!',
-            startDate: '18.05.2025',
-            endDate: '18.05.2025',
-            startTime: '19:00',
-            likes: 28,
-            comments: 7,
-        },
-        {
-            image: '/exampleDult.jpg',
-            title: 'Amberger Dult',
-            place: 'Amberg - Other Street 45',
-            description: 'Come check out this year’s Amberger Dult! Enjoy sweet cotton candy, thrilling rides, tasty food, and loads of fun attractions for everyone. Don’t miss out on the biggest celebration of the year!',
-            startDate: '20.06.2025',
-            endDate: '22.06.2025',
-            startTime: '10:00',
-            likes: 33,
-            comments: 10,
-        },
         {
             image: '/examplePride.jpg',
             title: 'Pride March 2025',
@@ -58,18 +35,43 @@
             likes: 56,
             comments: 21,
         },
-        {
-            image: '/exampleNewYears.jpg',
-            title: 'New Years Party',
-            place: 'Amberg - Party Center',
-            description: 'Celebrate the New Year with us! Enjoy fireworks, champagne for everyone, and a night full of fun and excitement. Don’t miss out on the best party to start the year right!',
-            startDate: '31.12.2025',
-            endDate: '01.01.2026',
-            startTime: '20:00',
-            likes: 17,
-            comments: 3,
-        }
     ]
+
+    // dummy user
+    export let user = {
+        name: "Your username here",
+        location: "Amberg",
+        avatarUrl: "/user.png", // Beispielbild
+    };
 </script>
 
-<EventFeed {events}/>
+<div class="max-w-6xl mx-auto p-4 bg-[#fcfcfc] rounded-2xl shadow-md flex flex-col space-y-6">
+    <!-- User Profile -->
+    <div class="flex items-center justify-between border-b border-[#bf2b47] pb-4">
+        <div>
+            <h1 class="text-2xl font-bold text-[#541a46]">{user.name}</h1>
+            <p class="text-sm text-[#892247]">{user.location}</p>
+        </div>
+        <img
+        src={user.avatarUrl}
+        alt="User Avatar"
+        class="w-16 h-16 rounded-full object-cover border-2 border-[#892246]"/>
+    </div>
+
+    <!-- User Events -->
+    <div class="grid grid-cols-1 gap-2 p-4 max-w-6xl h-[28rem] mx-auto rounded-2xl border-2 border-[#bf2b47] shadow-md bg-[#fcfcfc]">
+        <h2 class="text-2xl font-bold text-[#541a46] mb-1">Your Created Events</h2>
+        <div class="flex-grow overflow-y-auto">
+            <EventFeed {events}/>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 gap-2 p-4 max-w-6xl h-[28rem] mx-auto rounded-2xl border-2 border-[#bf2b47] shadow-md bg-[#fcfcfc]">
+        <h2 class="text-2xl font-bold text-[#541a46] mb-1">Joined Events</h2>
+        <div class="flex-grow overflow-y-auto">
+            <EventFeed {events}/>
+        </div>
+    </div>
+</div>
+
+
