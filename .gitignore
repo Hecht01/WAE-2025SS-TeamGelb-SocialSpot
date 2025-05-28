@@ -136,3 +136,6 @@ dist
 .pnp.*
 sys-src/nginx/certs/key.pem
 sys-src/nginx/certs/cert.pem
+
+#
+package-lock.json
