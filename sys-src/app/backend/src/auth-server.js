@@ -4,10 +4,15 @@ import cookieParser from 'cookie-parser';
 import path from 'path';
 import crypto from 'crypto';
 import * as openid from 'openid-client';
-import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
 
-dotenv.config({path: '../../.env'});
+if (process.env.NODE_ENV !== 'production') {
+    console.log('dev environment')
+    await import('dotenv').then(dotenv => {
+        dotenv.config({path: '../../.env'});
+    });
+}
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
