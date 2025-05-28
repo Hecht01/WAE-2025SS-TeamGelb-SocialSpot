@@ -14,9 +14,9 @@ const mocks = {
         title: () => "Party im Bundestag",
         author: () => {
             return {
-                id: () => "User_01",
+                id: "User_01",
                 name: "Olaf Scholz",
-                email: () => "olaf.scholz@gmail.com"
+                email:"olaf.scholz@gmail.com"
             };
         },
         description: () => "Party im Bundestag, Olaf geht ab",
@@ -26,6 +26,9 @@ const mocks = {
         address: () => "Platz der Republik 1, 11011 Berlin",
         type: () => "Party",
         thumbnail: () => "https://www.bundestag.de/resource/image/218498/16x9/1460/822/e0c4580af18d49e18c422437b47d7d14/FB55CF5ACCABD2CCF08FB2B61D466259/westportal01.jpg",
+        latitude: () => 52.520008,
+        longitude: () => 13.404954,
+
     }),
     User: () => ({
         id: () => "user_01",

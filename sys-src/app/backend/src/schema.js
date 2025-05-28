@@ -21,12 +21,15 @@ const typeDefs = gql`
         type: String!
         attendees: [User!]
         thumbnail: String
+        latitude: Float
+        longitude: Float
     }
     
     type Query {
-        "Get all Events"
-        allEvents: [Event!]!
+        event: [Event!]!
+        eventList: [Event!]!
         user: User!
+        userList: [User!]!
     }
 `;
 module.exports = typeDefs;
