@@ -12,11 +12,10 @@ export default defineConfig({
 		sveltekit(),
 	],
 	server: {
-		host: true,
-		port: 8080
+		port: 3000
 	},
 	define: {
-		__API_ADDRESS__: `"http://${process.env.BACKEND_HOST || "localhost"}:3000"`,
+		__API_ADDRESS__: process.env.BACKEND_HOST || "http://localhost:4000",
 	},
 	test: {
 		workspace: [

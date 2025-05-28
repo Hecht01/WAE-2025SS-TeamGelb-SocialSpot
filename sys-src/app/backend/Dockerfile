@@ -13,7 +13,7 @@ FROM node:${NODE_VERSION}-alpine
 # Use production node environment by default.
 ENV NODE_ENV production
 
-WORKDIR /usr/src/app
+WORKDIR /app
 
 # Download dependencies as a separate step to take advantage of Docker's caching.
 # Leverage a cache mount to /root/.npm to speed up subsequent builds.
@@ -35,7 +35,7 @@ USER node
 COPY . .
 
 # Expose the port that the application listens on.
-EXPOSE 3000
+EXPOSE 4000
 
 # Run the application.
 CMD npm run dev

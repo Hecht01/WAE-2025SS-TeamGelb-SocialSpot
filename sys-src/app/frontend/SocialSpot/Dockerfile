@@ -1,24 +1,28 @@
 ARG NODE_VERSION=22.12.0
+
+# Build stage
+FROM node:${NODE_VERSION}-alpine AS builder
+
+WORKDIR /app
+
+COPY package*.json ./
+RUN npm install
+
+COPY . .
+RUN npm run build
+
+# Production stage
 FROM node:${NODE_VERSION}-alpine
 
 WORKDIR /app
 
-# Download dependencies as a separate step to take advantage of Docker's caching.
-# Leverage a cache mount to /root/.npm to speed up subsequent builds.
-# Leverage a bind mounts to package.json and package-lock.json to avoid having to copy them into
-# into this layer.
+COPY --from=builder /app/build ./build
+COPY --from=builder /app/package*.json ./
 
-COPY package*.json .
+RUN npm install --omit=dev
 
-RUN npm install
+USER node
 
-# Run the application as a non-root user.
+CMD ["node", "build/index.js"]
 
-# Copy the rest of the source files into the image.
-COPY .. .
-
-# Expose the port that the application listens on.
-EXPOSE 8080
-
-# Run the application.
-CMD npm run dev -- --host 0.0.0.0
+EXPOSE 3000

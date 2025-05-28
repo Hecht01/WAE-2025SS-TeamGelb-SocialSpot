@@ -19,8 +19,6 @@ services:
     build: ./app/backend
     env_file:
       - .env
-    ports:
-      - 3000:3000
     depends_on:
       postgres:
         condition: service_healthy
@@ -29,8 +27,6 @@ services:
     build: ./app/frontend/SocialSpot
     env_file:
       - .env
-    ports:
-      - 8080:8080
   nginx:
     image: nginx:alpine
     container_name: nginx
@@ -39,7 +35,7 @@ services:
       - "443:443"
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf
-      - ./nginx/certs:/etc/nginx/certs
+      - ./nginx/certs:/etc/nginx/certs:ro
     depends_on:
       - webapp
       - webserver
