@@ -31,9 +31,6 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 let redirectUri = process.env.REDIRECT_URI;
 let scope = 'openid email profile';
-console.log(`client id: ${process.env.GOOGLE_CLIENT_ID}`);
-console.log(`client secret: ${process.env.GOOGLE_CLIENT_SECRET}`);
-console.log(`redirectUri: ${redirectUri}`);
 
 let config = await openid.discovery(
     new URL('https://accounts.google.com'),
