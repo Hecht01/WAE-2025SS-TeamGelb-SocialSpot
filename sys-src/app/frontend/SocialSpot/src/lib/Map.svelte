@@ -1,7 +1,21 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import { request, gql } from 'graphql-request';
 
   let mapContainer: HTMLDivElement;
+
+  const endpoint = 'http://localhost:4000/graphql';
+
+  const query = gql`
+    query {
+      eventList {
+        id
+        title
+        latitude
+        longitude
+      }
+    }
+  `;
 
   onMount(async () => {
     const L = await import('leaflet');
@@ -10,37 +24,34 @@
     const map = L.map(mapContainer).setView([51.505, -0.09], 13);
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '© OpenStreetMap contributors',
+      attribution: '© OpenStreetMap contributors'
     }).addTo(map);
 
-    L.marker([51.505, -0.09])
-      .addTo(map)
-      .bindPopup('Du bist hier!')
-      .openPopup();
-  });
+    // GraphQL-Daten abfragen
+    try {
+      const data = await request(endpoint, query);
 
+      data.eventList.forEach((event: any) => {
+        if (event.latitude && event.longitude) {
+          L.marker([event.latitude, event.longitude])
+            .addTo(map)
+            .bindPopup(`<strong>${event.title}</strong>`)
+            .openPopup();
+        }
+      });
+
+    } catch (err) {
+      console.error('Fehler beim Abrufen der Events:', err);
+    }
+  });
 </script>
 
 <style>
-  .page {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 2rem;
-    gap: 1rem;
-  }
-
-  .map-container {
-    width: 90%;
-    max-width: 1000px;
-    height: 600px;
+  #map {
+    height: 800px;
+    width: 80%;
     border-radius: 12px;
-    overflow: hidden;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
   }
-
 </style>
 
-<div class="page">
-  <div class="map-container" bind:this={mapContainer}></div>
-</div>
+<div bind:this={mapContainer} id="map"></div>

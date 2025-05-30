@@ -3,6 +3,7 @@
     // dummy event list - only Pride, Ren-Fair and Animal Shelter
     let events = [
         {
+            id: 3,
             image: '/examplePride.jpg',
             title: 'Pride March 2025',
             place: 'Amberg - City Center',
@@ -14,6 +15,7 @@
             comments: 7,
         },
         {
+            id: 4,
             image: '/exampleRenFair.jpg',
             title: 'Renaissance Fair',
             place: 'Amberg - Old Castle',
@@ -25,6 +27,7 @@
             comments: 5,
         },
         {
+            id: 5,
             image: '/exampleShelter.jpg',
             title: 'Animal Shelter Festival',
             place: 'Amberg - Animal Shelter Purrfection',
@@ -37,41 +40,75 @@
         },
     ]
 
-    // dummy user
-    export let user = {
-        name: "Your username here",
-        location: "Amberg",
-        avatarUrl: "/user.png", // Beispielbild
-    };
+    // dummy user (starts out as null so not logged in)
+    let user = null;
+
+    // !! means isLoggedIn is true if user is defined, and false if user is null
+    $: isLoggedIn = !!user;
+
+    // dummy log-in CHANGE THIS FOR OAUTH
+    function handleLogin() {
+        user = {
+            name: "AmazingUsername",
+            location: "Amberg",
+            mail: "user@example.com",
+            avatarUrl: "/dummyUser.jpg",
+        };
+    }
 </script>
 
-<div class="max-w-6xl mx-auto p-4 bg-[#fcfcfc] rounded-2xl shadow-md flex flex-col space-y-6">
-    <!-- User Profile -->
-    <div class="flex items-center justify-between border-b border-[#bf2b47] pb-4">
-        <div>
-            <h1 class="text-2xl font-bold text-[#541a46]">{user.name}</h1>
-            <p class="text-sm text-[#892247]">{user.location}</p>
+
+{#if isLoggedIn}
+    <!-- if user logged in, show profile page -->
+    <div class="max-w-6xl mx-auto p-4 bg-[#fcfcfc] rounded-2xl shadow-md flex flex-col space-y-6">
+        <!-- user info -->
+        <div class="flex items-center justify-between border-b border-[#bf2b47] pb-4">
+            <div >
+                <h1 class="text-2xl font-bold text-[#541a46]">{user.name}</h1>
+                <p class="text-sm text-[#892247]">My location: {user.location}</p>
+                <p class="text-sm text-[#892247]">My email: {user.mail}</p>
+            </div>
+            <div class="flex flex-col items-center gap-2">
+                <img
+                src={user.avatarUrl}
+                alt="User Avatar"
+                class="w-16 h-16 rounded-full object-cover border-2 border-[#892246]"/>
+                <!-- Log-Out means putting user as null again -->
+                <button on:click={() => (user = null)} class="bg-[#bf2b47] text-[#fcfcfc] px-6 py-1 rounded hover:bg-[#892246] transition">
+                    Log Out
+                </button>
+            </div>
         </div>
-        <img
-        src={user.avatarUrl}
-        alt="User Avatar"
-        class="w-16 h-16 rounded-full object-cover border-2 border-[#892246]"/>
+
+        <!-- user events (created and joined) -->
+        <div class="grid grid-cols-1 gap-2 p-4 max-w-6xl h-[28rem] mx-auto rounded-2xl border-2 border-[#bf2b47] shadow-md bg-[#fcfcfc]">
+            <h2 class="text-2xl font-bold text-[#541a46] mb-1">Your Created Events</h2>
+            <div class="flex-grow overflow-y-auto">
+                <EventFeed {events}/>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 gap-2 p-4 max-w-6xl h-[28rem] mx-auto rounded-2xl border-2 border-[#bf2b47] shadow-md bg-[#fcfcfc]">
+            <h2 class="text-2xl font-bold text-[#541a46] mb-1">Joined Events</h2>
+            <div class="flex-grow overflow-y-auto">
+                <EventFeed {events}/>
+            </div>
+        </div>
     </div>
 
-    <!-- User Events -->
-    <div class="grid grid-cols-1 gap-2 p-4 max-w-6xl h-[28rem] mx-auto rounded-2xl border-2 border-[#bf2b47] shadow-md bg-[#fcfcfc]">
-        <h2 class="text-2xl font-bold text-[#541a46] mb-1">Your Created Events</h2>
-        <div class="flex-grow overflow-y-auto">
-            <EventFeed {events}/>
+{:else}
+    <!-- if user not logged in, ask for log-in -->
+    <div class="w-screen h-screen flex items-center justify-center bg-gray-100">
+        <div class="w-full max-w-[34rem] h-[22rem] rounded-2xl overflow-hidden shadow-md bg-[#fcfcfc] flex flex-col">
+            <div class="p-4 flex flex-col gap-4 text-[#1f1246] h-full items-center justify-center text-center">
+                <h2 class="text-lg font-bold text-[#541a46]">
+                    Please Log In to continue to your profile
+                </h2>
+                <button on:click={handleLogin} class="bg-[#bf2b47] text-[#fcfcfc] px-6 py-2 rounded hover:bg-[#892246] transition">
+                    Log In
+                </button>
+            </div>
         </div>
     </div>
-
-    <div class="grid grid-cols-1 gap-2 p-4 max-w-6xl h-[28rem] mx-auto rounded-2xl border-2 border-[#bf2b47] shadow-md bg-[#fcfcfc]">
-        <h2 class="text-2xl font-bold text-[#541a46] mb-1">Joined Events</h2>
-        <div class="flex-grow overflow-y-auto">
-            <EventFeed {events}/>
-        </div>
-    </div>
-</div>
-
+{/if}
 
