@@ -1,15 +1,20 @@
-const { Pool } = require("pg");
+import {Pool} from "pg";
+
+if (process.env.NODE_ENV !== 'production') {
+    await import('dotenv').then(dotenv => {
+        dotenv.config({path: '../../.env'});
+    });
+}
 
 const pool = new Pool({
-    user: process.env.DB_USER,
-    host: process.env.DB_HOST,
-    database: process.env.DB_NAME,
-    password: process.env.DB_PASSWORD,
-    port: process.env.DB_PORT,
+    user: process.env.PG_USER,
+    host: process.env.PG_HOST,
+    database: process.env.POSTGRES_DB,
+    password: process.env.POSTGRES_PASSWORD,
+    port: process.env.PG_PORT,
 });
 
-
-const resolvers = {
+export const resolvers = {
     Query: {
         eventList: async () => {
             const res = await pool.query(`
@@ -23,7 +28,7 @@ const resolvers = {
                 description: row.description,
                 date: row.event_date,
                 time: row.event_time,
-                location: row.city_id.toString(),
+                location: "TODO Ort",
                 address: row.address,
                 type: "Generic", // You can join the category table for name
                 latitude: row.latitude,
@@ -103,5 +108,3 @@ const resolvers = {
         }
     }
 };
-
-module.exports = resolvers;

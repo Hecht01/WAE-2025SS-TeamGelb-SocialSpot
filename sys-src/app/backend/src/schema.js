@@ -1,6 +1,6 @@
-const gql = require("graphql-tag");
+import gql from "graphql-tag";
 
-const typeDefs = gql`
+export const typeDefs = gql`
     #Defining Schema here:
     type User {
         id: ID!
@@ -48,4 +48,3 @@ const typeDefs = gql`
         ): Event!
     }
 `;
-module.exports = typeDefs;
