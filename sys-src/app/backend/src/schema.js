@@ -1,6 +1,6 @@
-const gql = require("graphql-tag");
+import gql from "graphql-tag";
 
-const typeDefs = gql`
+export const typeDefs = gql`
     #Defining Schema here:
     type User {
         id: ID!
@@ -31,5 +31,20 @@ const typeDefs = gql`
         user: User!
         userList: [User!]!
     }
+
+    type Mutation {
+        createEvent(
+            title: String!
+            description: String!
+            date: String!
+            time: String!
+            cityId: Int!
+            address: String
+            latitude: Float
+            longitude: Float
+            creatorId: Int!
+            categoryId: Int
+            imageUrl: String
+        ): Event!
+    }
 `;
-module.exports = typeDefs;
