@@ -134,3 +134,5 @@ dist
 .yarn/build-state.yml
 .yarn/install-state.gz
 .pnp.*
+sys-src/nginx/certs/key.pem
+sys-src/nginx/certs/cert.pem
