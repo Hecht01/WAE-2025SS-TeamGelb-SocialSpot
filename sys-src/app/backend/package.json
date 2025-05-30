@@ -2,16 +2,29 @@
   "name": "backend",
   "version": "1.0.0",
   "description": "",
-  "main": "src/index.js",
+  "main": "src/auth-server.js",
+  "type": "module",
   "scripts": {
     "compile": "tsc",
-    "dev": "node ./src/index.js",
-    "start": "npm run compile && nodemon ./dist/index.js",
+    "dev": "node src/auth-server.js && nodemon src/index",
+    "start": "npm run compile && nodemon ./dist/index.js && nodemon src/index",
     "test": "jest"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "express": "^5.1.0"
+    "@apollo/server": "^4.12.1",
+    "@graphql-tools/mock": "^9.0.22",
+    "@graphql-tools/schema": "^10.0.23",
+    "cookie-parser": "^1.4.7",
+    "express": "^5.1.0",
+    "express-session": "^1.18.1",
+    "graphql": "^16.11.0",
+    "graphql-tag": "^2.12.6",
+    "openid-client": "^6.5.0"
+  },
+  "devDependencies": {
+    "dotenv": "^16.5.0",
+    "nodemon": "^3.0.1"
   }
 }

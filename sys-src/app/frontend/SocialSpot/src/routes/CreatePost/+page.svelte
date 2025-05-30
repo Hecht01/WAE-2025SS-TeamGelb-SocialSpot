@@ -1,5 +1,4 @@
 <style>
-    @import "src\lib\style.css";
     sosp-container
      {
         max-width: 600px;
@@ -38,10 +37,9 @@
     }
 </style>
 
-
-
-
 <script>
+    import "$lib/style.css";
+
     let filename = '';
     let imageUrl = '';
 
