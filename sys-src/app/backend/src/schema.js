@@ -31,5 +31,21 @@ const typeDefs = gql`
         user: User!
         userList: [User!]!
     }
+
+    type Mutation {
+        createEvent(
+            title: String!
+            description: String!
+            date: String!
+            time: String!
+            cityId: Int!
+            address: String
+            latitude: Float
+            longitude: Float
+            creatorId: Int!
+            categoryId: Int
+            imageUrl: String
+        ): Event!
+    }
 `;
 module.exports = typeDefs;
