@@ -4,6 +4,7 @@
     // dummy event list - all events
     let events = [
         {
+            id: 1,
             image: '/exampleOpenMicNight.jpg',
             title: 'Open Mic Night',
             place: 'Amberg - Main Street 123',
@@ -15,6 +16,7 @@
             comments: 7,
         },
         {
+            id: 2,
             image: '/exampleDult.jpg',
             title: 'Amberger Dult',
             place: 'Amberg - Other Street 45',
@@ -26,6 +28,7 @@
             comments: 10,
         },
         {
+            id: 3,
             image: '/examplePride.jpg',
             title: 'Pride March 2025',
             place: 'Amberg - City Center',
@@ -37,6 +40,7 @@
             comments: 7,
         },
         {
+            id:4,
             image: '/exampleRenFair.jpg',
             title: 'Renaissance Fair',
             place: 'Amberg - Old Castle',
@@ -48,6 +52,7 @@
             comments: 5,
         },
         {
+            id: 5,
             image: '/exampleShelter.jpg',
             title: 'Animal Shelter Festival',
             place: 'Amberg - Animal Shelter Purrfection',
@@ -59,6 +64,7 @@
             comments: 21,
         },
         {
+            id: 6,
             image: '/exampleNewYears.jpg',
             title: 'New Years Party',
             place: 'Amberg - Party Center',

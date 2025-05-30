@@ -1,60 +1,11 @@
-<script>
-
-</script>
-
-<style>
-    header{
-        position: sticky;
-        z-index: 1;
-        top: 0;
-        left: 0;
-        display: flex;
-        flex-direction: row;
-        justify-content: left;
-        align-items: center;
-        width: 100%;
-        border-bottom: gainsboro solid 2px;
-        font-family: "Montserrat", sans-serif;
-        margin-top: 0;
-        padding: 20px;
-        box-shadow: gainsboro 0 0 10px;
-        background-color: #fcfcfc;
-        font-size: larger;
-    }
-
-    .title{
-        padding-right: 50px;
-        padding-left: 50px;
-        font-weight: bold;
-    }
-
-    nav a{
-        text-decoration: none;
-        color: #1f1246;
-        font-weight: bold;
-        padding: 10px;
-    }
-
-    nav a:hover{
-        background-color: #fcecee;
-        color: #bf2b47;
-        border-radius: 5px;
-        padding: 10px;
-    }
-
-    img{
-        max-height: 45px;
-    }
-</style>
-
-<header>
-    <div class = "title">
-        <img src ="/logo_no_background.png" alt = "Social Spot Logo"/>
+<header class="sticky top-0 left-0 z-30 w-full flex items-center border-b-2 border-gray-200 bg-[#fcfcfc] px-5 py-4 shadow-md font-sans text-lg">
+    <div class="px-12 font-bold">
+        <img src="/logo_no_background.png" alt="Social Spot Logo" class="max-h-[45px]" />
     </div>
-    <nav>
-        <a href = "/">Home</a>
-        <a href = "/map">Map</a>
-        <a href = "/CreatePost">Create New Event</a>
-        <a href = "/userPage">My Profile</a>
+    <nav class="flex gap-4">
+        <a href="/" class="text-[#1f1246] font-bold px-3 py-2 rounded hover:bg-[#fcecee] hover:text-[#bf2b47]">Home</a>
+        <a href="/map" class="text-[#1f1246] font-bold px-3 py-2 rounded hover:bg-[#fcecee] hover:text-[#bf2b47]">Map</a>
+        <a href="/CreatePost" class="text-[#1f1246] font-bold px-3 py-2 rounded hover:bg-[#fcecee] hover:text-[#bf2b47]">Create New Event</a>
+        <a href="/userPage" class="text-[#1f1246] font-bold px-3 py-2 rounded hover:bg-[#fcecee] hover:text-[#bf2b47]">My Profile</a>
     </nav>
 </header>
