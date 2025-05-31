@@ -74,7 +74,7 @@
                 alt="User Avatar"
                 class="w-16 h-16 rounded-full object-cover border-2 border-[#892246]"/>
                 <!-- Log-Out means putting user as null again -->
-                <button on:click={() => (user = null)} class="bg-[#bf2b47] text-[#fcfcfc] px-6 py-1 rounded hover:bg-[#892246] transition">
+                <button on:click={() => (user = null)} class="sosp-button">
                     Log Out
                 </button>
             </div>
@@ -104,7 +104,7 @@
                 <h2 class="text-lg font-bold text-[#541a46]">
                     Please Log In to continue to your profile
                 </h2>
-                <button on:click={handleLogin} class="bg-[#bf2b47] text-[#fcfcfc] px-6 py-2 rounded hover:bg-[#892246] transition">
+                <button on:click={handleLogin} class="sosp-button">
                     Log In
                 </button>
             </div>
