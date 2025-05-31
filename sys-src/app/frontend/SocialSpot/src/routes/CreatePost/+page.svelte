@@ -58,7 +58,6 @@
 
 
 
-<img src="logo.png" alt="Social Spot Logo" style="max-width: 400px; margin: 2rem auto; display: block;" />
 
 
 
