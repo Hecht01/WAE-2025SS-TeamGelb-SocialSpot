@@ -1,12 +1,11 @@
 <style>
-    sosp-container
-     {
+    .sosp-container {
         max-width: 600px;
         width: 100%;
     }
 
 
-    /* Modernes Styling für den Datei-Upload */
+    /* Style Datei-Upload */
     .file-upload-label {
         display: inline-block;
         padding: 0.75rem 1.5rem;
@@ -54,17 +53,6 @@
     }
 </script>
 
-
-
-
-
-
-
-
-
-
-
-
 <div class="sosp-container">
     <label for="titel">Titel</label>
     <input id="titel" type="text" class="sosp-input" placeholder="Titel des Events" />
@@ -81,22 +69,20 @@
     <label for="startzeit" style="margin-top:1rem;">Startzeit</label>
     <input id="startzeit" type="time" class="sosp-input" placeholder="Startzeit" />
 
-    <label style="margin-top:1rem;">Bild hochladen</label>
-    
-
+    <label for="bild" style="margin-top:1rem;">Bild hochladen</label>
     {#if imageUrl}
         <img src={imageUrl} alt="Vorschau" style="max-width: 100%; margin-top: 1rem; border-radius: 0.5rem;" />
-    {:else}   
-        <label class="file-upload-label">
-                Bild auswählen
-                <input
-                    id="bild"
-                    type="file"
-                    class="file-upload-input"
-                    accept="image/*"
-                    on:change={handleFileChange}
-                />
-            </label>
+    {:else}
+        <label class="file-upload-label" for="bild">
+            Bild auswählen
+            <input
+                id="bild"
+                type="file"
+                class="file-upload-input"
+                accept="image/*"
+                on:change={handleFileChange}
+            />
+        </label>
     {/if}
 
 
