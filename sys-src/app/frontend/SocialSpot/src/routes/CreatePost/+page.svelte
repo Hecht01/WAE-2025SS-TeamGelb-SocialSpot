@@ -53,6 +53,12 @@
     }
 </script>
 
+
+
+
+
+
+
 <div class="sosp-container">
     <label for="titel">Titel</label>
     <input id="titel" type="text" class="sosp-input" placeholder="Titel des Events" />
@@ -66,6 +72,9 @@
     <label for="startdatum" style="margin-top:1rem;">Startdatum</label>
     <input id="startdatum" type="date" class="sosp-input" placeholder="Startdatum" />
 
+    <label for="dauer" style="margin-top:1rem;">Dauer des Events (in Tagen)</label>
+    <input id="dauer" type="number" class="sosp-input" placeholder="Dauer des Events in Tagen" min="1" />
+    
     <label for="startzeit" style="margin-top:1rem;">Startzeit</label>
     <input id="startzeit" type="time" class="sosp-input" placeholder="Startzeit" />
 
@@ -90,7 +99,6 @@
     <!-- Abstand vor den Buttons -->
     <div style="height: 2rem;"></div>
 
-    <button class="sosp-button">Abbruch</button>
-    <button class="sosp-button">OK</button>
+    <button class="sosp-button">Event Anlegen</button>
 
 </div>
