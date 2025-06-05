@@ -24,7 +24,10 @@ services:
         condition: service_healthy
   webapp:
     restart: unless-stopped
-    build: ./app/frontend/SocialSpot
+    build:
+      context: ./app/frontend/SocialSpot
+      args:
+        - VITE_API_URL=${VITE_API_URL}
     env_file:
       - .env
   nginx:

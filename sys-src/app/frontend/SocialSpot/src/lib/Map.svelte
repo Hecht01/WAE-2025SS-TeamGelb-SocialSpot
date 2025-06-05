@@ -2,14 +2,14 @@
   import { onMount } from 'svelte';
   import * as L from 'leaflet';
   import 'leaflet/dist/leaflet.css';
-  import 'leaflet.markercluster';
   import 'leaflet.markercluster/dist/MarkerCluster.css';
   import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
+  import MarkerClusterGroup from 'leaflet.markercluster';
 
   import { request, gql } from 'graphql-request';
 
   let mapContainer: HTMLDivElement;
-  const endpoint = 'http://localhost:4000/graphql';
+  const API_URL = `${import.meta.env.VITE_API_URL || 'http://localhost:4000'}/graphql`;
 
   //GraphQL query
   const query = gql`
@@ -34,7 +34,7 @@
     const markerClusterGroup = L.markerClusterGroup();
 
     try {
-      const data = await request(endpoint, query);
+      const data = await request(API_URL, query);
 
       data.eventList.forEach((event: any) => {
         if (event.latitude && event.longitude) {
