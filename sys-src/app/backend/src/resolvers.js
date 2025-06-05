@@ -1,18 +1,4 @@
-import {Pool} from "pg";
-
-if (process.env.NODE_ENV !== 'production') {
-    await import('dotenv').then(dotenv => {
-        dotenv.config({path: '../../.env'});
-    });
-}
-
-const pool = new Pool({
-    user: process.env.PG_USER,
-    host: process.env.PG_HOST,
-    database: process.env.POSTGRES_DB,
-    password: process.env.POSTGRES_PASSWORD,
-    port: process.env.PG_PORT,
-});
+import {pool} from './database.js';
 
 export const resolvers = {
     Query: {

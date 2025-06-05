@@ -7,7 +7,7 @@ import { ApolloServer } from "apollo-server-express";
 import { addMocksToSchema } from "@graphql-tools/mock";
 import { makeExecutableSchema } from "@graphql-tools/schema";
 import cors from 'cors';
-
+import {pool, upsertUserGoogle} from './database.js';
 
 if (process.env.NODE_ENV !== 'production') {
     console.log('dev environment')
@@ -34,11 +34,19 @@ app.use(cookieParser());
 app.use('/api', express.json());
 app.use('/api', express.urlencoded({ extended: true }));
 
+//nginx forwards per http and express expects SSL
+app.set('trust proxy', 1);
+
 const sessionMiddleware = session({
     secret: crypto.randomBytes(64).toString('hex'),
     resave: false,
     saveUninitialized: true,
-    cookie: { secure: process.env.NODE_ENV === 'production' }
+    cookie: {
+        secure: process.env.NODE_ENV === 'production',
+        httpOnly: true,
+        maxAge: 1000 * 60 * 60 * 24 * 7,
+        sameSite: process.env.NODE_ENV === 'PROD' ? 'none' : 'lax',
+    }
 });
 app.use(sessionMiddleware);
 
@@ -67,10 +75,11 @@ server.applyMiddleware({
 });
 
 app.get('/api', (req, res) => {
+    console.log(req.session);
     if (req.session.user) {
         res.send(`
-      <h1>Welcome ${req.session.user.name}</h1>
-      <img src="${req.session.user.picture}" alt="Profile Picture" style="width:100px;border-radius:50%;">
+      <h1>Welcome ${req.session.user.username}</h1>
+      <img src="${req.session.user.profile_picture_url}" alt="Profile Picture" style="width:100px;border-radius:50%;">
       <p>Email: ${req.session.user.email}</p>
       <p><a href="/graphql">GraphQL Playground</a></p>
       <a href="/api/logout">Logout</a>
@@ -109,9 +118,10 @@ app.get('/api/auth-google', async (req, res) => {
 
 app.get('/api/auth/callback', async (req, res) => {
     try {
+        console.log(`try: ${process.env.BACKEND_URL}${req.url}`)
         let tokens = await openid.authorizationCodeGrant(
             config,
-            new URL(`http://localhost:${port}${req.url}`),
+            new URL(`${process.env.BACKEND_URL}${req.url}`),
             {
                 expectedState: req.session.expectedState,
             },
@@ -135,13 +145,12 @@ app.get('/api/auth/callback', async (req, res) => {
             const data = await response.json();
 
             console.log('data', data);
+            const userData = await upsertUserGoogle(data);
 
-            req.session.user = {
-                id: data.id,
-                email: data.email,
-                name: `${data.given_name} ${data.family_name}`,
-                picture: data.picture
-            };
+            //TODO: handle new user..?
+            if(userData.success) {
+                req.session.user = userData.user;
+            }
         }
 
         res.redirect('/api');

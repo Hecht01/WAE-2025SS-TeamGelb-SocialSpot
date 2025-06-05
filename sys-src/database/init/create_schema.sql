@@ -1,11 +1,13 @@
 CREATE EXTENSION IF NOT EXISTS pg_trgm;
 CREATE EXTENSION IF NOT EXISTS postgis;
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
 CREATE TABLE IF NOT EXISTS app_user (
     user_id SERIAL PRIMARY KEY,
-    username VARCHAR(50) UNIQUE NOT NULL,
+    google_auth_id VARCHAR(255) UNIQUE NOT NULL,
+    user_uri uuid UNIQUE NOT NULL DEFAULT gen_random_uuid(),
+    username VARCHAR(50) NOT NULL,
     email VARCHAR(100) UNIQUE NOT NULL,
-    password_hash VARCHAR(255) NOT NULL,
     profile_picture_url VARCHAR(255),
     gen_date TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     last_login TIMESTAMP WITH TIME ZONE
@@ -22,10 +24,11 @@ CREATE TABLE IF NOT EXISTS city (
     country VARCHAR(3) NOT NULL,
     postal_code INT NOT NULL,
     name VARCHAR(255) NOT NULL,
+    district VARCHAR(255) NOT NULL,
+    state VARCHAR(100) NOT NULL,
     latitude DECIMAL(10, 8) NOT NULL,
     longitude DECIMAL(11, 8) NOT NULL,
-    geo GEOGRAPHY(POINT, 4326),
-    UNIQUE (country, postal_code)
+    geo GEOGRAPHY(POINT, 4326)
 );
 
 CREATE TABLE IF NOT EXISTS event (
@@ -116,3 +119,10 @@ CREATE INDEX idx_friendships_user ON friendship (user_id);
 -- pg_trgm for accelerating text search
 CREATE INDEX idx_events_title_trgm ON event USING GIN (title gin_trgm_ops);
 CREATE INDEX idx_events_description_trgm ON event USING GIN (description gin_trgm_ops);
+
+/*
+COPY city(country, postal_code, name, latitude, longitude)
+FROM 'germany_gis.csv'
+DELIMITER ','
+CSV HEADER;
+ */
