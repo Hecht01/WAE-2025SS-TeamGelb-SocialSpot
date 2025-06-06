@@ -30,24 +30,45 @@ app.use(cors({
     ],
     credentials: true
 }));
+
 app.use(cookieParser());
 app.use('/api', express.json());
 app.use('/api', express.urlencoded({ extended: true }));
 
-//nginx forwards per http and express expects SSL
-app.set('trust proxy', 1);
+let sessionMiddleware;
 
-const sessionMiddleware = session({
-    secret: crypto.randomBytes(64).toString('hex'),
-    resave: false,
-    saveUninitialized: true,
-    cookie: {
-        secure: process.env.NODE_ENV === 'production',
-        httpOnly: true,
-        maxAge: 1000 * 60 * 60 * 24 * 7,
-        sameSite: process.env.NODE_ENV === 'PROD' ? 'none' : 'lax',
-    }
-});
+if (process.env.NODE_ENV === 'production'){
+    //nginx forwards per http and express expects SSL
+    app.enable('trust proxy');
+
+    sessionMiddleware = session({
+        secret: process.env.secret || 'Super Secure Secret',
+        proxy: true,
+        resave: false,
+        saveUninitialized: true,
+        key: 'session.sid',
+        cookie: {
+            secure: true,
+            httpOnly: true,
+            maxAge: 1000 * 60 * 60 * 24 * 7,
+            sameSite: 'none',
+        }
+    });
+} else {
+    sessionMiddleware = session({
+        secret: process.env.secret || 'Super Secure Secret',
+        resave: false,
+        saveUninitialized: true,
+        key: 'session.sid',
+        cookie: {
+            secure: false,
+            httpOnly: true,
+            maxAge: 1000 * 60 * 60 * 24 * 7,
+            sameSite: 'lax',
+        }
+    });
+}
+
 app.use(sessionMiddleware);
 
 // OAuth configuration
@@ -61,21 +82,34 @@ let config = await openid.discovery(
 );
 
 // Create Apollo Server
-const server = new ApolloServer({
-    schema: addMocksToSchema({
-        schema: makeExecutableSchema({ typeDefs, resolvers }),
-        resolvers
-    }),
-});
-await server.start();
+try {
+    const server = new ApolloServer({
+        schema: addMocksToSchema({
+            schema: makeExecutableSchema({ typeDefs, resolvers }),
+            resolvers,
+        }),
+        context: ({ req, res }) => {
+            return {
+                req,
+                res
+            };
+        }
+    });
 
-server.applyMiddleware({
-    app,
-    path: '/graphql'
-});
+    await server.start();
+
+    server.applyMiddleware({
+        app,
+        path: '/graphql'
+    });
+
+} catch (error) {
+    console.error('Schema error:', error);
+}
+
 
 app.get('/api', (req, res) => {
-    console.log(req.session);
+    console.log(req.session.id);
     if (req.session.user) {
         res.send(`
       <h1>Welcome ${req.session.user.username}</h1>
@@ -150,6 +184,8 @@ app.get('/api/auth/callback', async (req, res) => {
             //TODO: handle new user..?
             if(userData.success) {
                 req.session.user = userData.user;
+                console.log('success', req.session);
+                req.session.save();
             }
         }
 
@@ -178,6 +214,6 @@ app.get('/api/profile', (req, res) => {
 });
 
 app.listen(port, () => {
-    console.log(`Server running on http://localhost:${port}/api`);
-    console.log(`GraphQL endpoint: http://localhost:${port}/graphql`);
+    console.log(`Server running on ${process.env.BACKEND_URL}/api`);
+    console.log(`GraphQL endpoint: ${process.env.BACKEND_URL}/graphql`);
 });

@@ -3,10 +3,17 @@ import gql from "graphql-tag";
 export const typeDefs = gql`
     #Defining Schema here:
     type User {
-        id: ID!
+        user_uri: ID!
         name: String!
         email: String!
         profilePicture: String
+    }
+    
+    type City {
+        id: ID!
+        name: String!
+        district: String!
+        state: String!
     }
     
     type Event{
@@ -29,7 +36,11 @@ export const typeDefs = gql`
         event: [Event!]!
         eventList: [Event!]!
         user: User!
+        myUser: User
         userList: [User!]!
+        getCities(
+            nameLike: String
+        ): [City!]!
     }
 
     type Mutation {
@@ -42,7 +53,6 @@ export const typeDefs = gql`
             address: String
             latitude: Float
             longitude: Float
-            creatorId: Int!
             categoryId: Int
             imageUrl: String
         ): Event!

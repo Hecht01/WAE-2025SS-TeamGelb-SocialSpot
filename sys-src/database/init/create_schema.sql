@@ -126,3 +126,48 @@ FROM 'germany_gis.csv'
 DELIMITER ','
 CSV HEADER;
  */
+
+CREATE OR REPLACE FUNCTION upsert_user(
+    p_google_auth_id TEXT,
+    p_username TEXT,
+    p_email TEXT,
+    p_profile_picture_url TEXT
+) RETURNS TABLE(
+    user_id BIGINT,
+    user_uri TEXT,
+    username TEXT,
+    email TEXT,
+    profile_picture_url TEXT,
+    gen_date TIMESTAMP,
+    last_login TIMESTAMP,
+    is_new_user BOOLEAN
+) AS $$
+DECLARE
+    existing_user_id BIGINT;
+BEGIN
+    -- Try to find existing user
+    SELECT u.user_id INTO existing_user_id
+    FROM app_user u
+    WHERE u.google_auth_id = p_google_auth_id;
+
+    IF existing_user_id IS NOT NULL THEN
+        -- Update existing user
+        RETURN QUERY
+        UPDATE app_user SET
+            last_login = CURRENT_TIMESTAMP,
+            profile_picture_url = p_profile_picture_url
+        WHERE app_user.user_id = existing_user_id
+        RETURNING app_user.user_id, app_user.user_uri, app_user.username,
+                  app_user.email, app_user.profile_picture_url, app_user.gen_date,
+                  app_user.last_login, false;
+    ELSE
+        -- Insert new user
+        RETURN QUERY
+        INSERT INTO app_user (google_auth_id, username, email, profile_picture_url, last_login)
+        VALUES (p_google_auth_id, p_username, p_email, p_profile_picture_url, CURRENT_TIMESTAMP)
+        RETURNING app_user.user_id, app_user.user_uri, app_user.username,
+                  app_user.email, app_user.profile_picture_url, app_user.gen_date,
+                  app_user.last_login, true;
+    END IF;
+END;
+$$ LANGUAGE plpgsql;

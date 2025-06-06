@@ -1,10 +1,11 @@
 import {pool} from './database.js';
+import {AuthenticationError} from "apollo-server-express";
 
 export const resolvers = {
     Query: {
         eventList: async () => {
             const res = await pool.query(`
-                SELECT e.*, u.username, u.email, u.profile_picture_url
+                SELECT e.*, u.user_uri, u.username, u.email, u.profile_picture_url
                 FROM event e
                 JOIN app_user u ON e.creator_id = u.user_id
             `);
@@ -21,10 +22,10 @@ export const resolvers = {
                 longitude: row.longitude,
                 thumbnail: row.image_url,
                 author: {
-                    id: row.creator_id,
+                    user_uri: row.user_uri,
                     name: row.username,
                     email: row.email,
-                    profilePicture: row.profile_picture_url
+                    profilePicture: row.profile_picture_url,
                 },
                 attendees: [] // Can be extended later
             }));
@@ -38,16 +39,71 @@ export const resolvers = {
                 email: user.email,
                 profilePicture: user.profile_picture_url
             }));
+        },
+
+        myUser: async (_, args, context) => {
+            const { req } = context;
+
+            console.log("graphql " + req.session.id)
+            console.log(req.session.user);
+
+            if (!req.session || !req.session.user) {
+                throw new AuthenticationError('Authentication required. Please log in.');
+            }
+
+            const user = req.session.user;
+
+            return {
+                user_uri: user.user_uri,
+                name: user.username,
+                email: user.email,
+                profilePicture: user.profile_picture_url
+            };
+        },
+
+        getCities: async (_, args) => {
+            const { nameLike } = args;
+            const query = `
+                SELECT min(city_id) as city_id,
+                       name,
+                       district,
+                       state
+                  FROM city 
+                 WHERE lower(name) like lower($1) 
+                 GROUP BY name, district, state
+                 LIMIT 10
+                 
+            `;
+            const values = [ (nameLike || '' ) + "%" ];
+            console.log(values);
+
+            const result = await pool.query(query, values);
+            console.log(result);
+
+            return result.rows.map(row => ({
+                id: row.city_id,
+                name: row.name,
+                district: row.district,
+                state: row.state
+            }));
         }
     },
 
     Mutation: {
-        createEvent: async (_, args) => {
+        createEvent: async (_, args, context) => {
             const {
                 title, description, date, time,
                 cityId, address, latitude, longitude,
-                creatorId, categoryId, imageUrl
+                categoryId, imageUrl
             } = args;
+
+            const { req } = context;
+
+            if (!req.session || !req.session.user) {
+                throw new AuthenticationError('Authentication required. Please log in.');
+            }
+
+            const user = req.session.user;
 
             const insertQuery = `
                 INSERT INTO event (
@@ -59,17 +115,15 @@ export const resolvers = {
                 RETURNING *
             `;
 
+
             const values = [
                 title, description, date, time,
                 cityId, address, latitude, longitude,
-                creatorId, categoryId, imageUrl
+                user.user_id, categoryId, imageUrl
             ];
 
             const result = await pool.query(insertQuery, values);
             const event = result.rows[0];
-
-            const userRes = await pool.query(`SELECT * FROM app_user WHERE user_id = $1`, [creatorId]);
-            const user = userRes.rows[0];
 
             return {
                 id: event.event_id,
@@ -77,14 +131,14 @@ export const resolvers = {
                 description: event.description,
                 date: event.event_date,
                 time: event.event_time,
-                location: event.city_id.toString(),
+                location: 4207, //event.city_id.toString(),
                 address: event.address,
                 type: "Generic",
                 latitude: event.latitude,
                 longitude: event.longitude,
                 thumbnail: event.image_url,
                 author: {
-                    id: user.user_id,
+                    user_uri: user.user_uri,
                     name: user.username,
                     email: user.email,
                     profilePicture: user.profile_picture_url
