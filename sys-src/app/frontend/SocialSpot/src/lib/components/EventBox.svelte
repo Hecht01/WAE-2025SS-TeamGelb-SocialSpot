@@ -35,7 +35,7 @@
         <p class="text-sm text-[#892246]"><strong>Date:</strong> {event.startDate} - {event.endDate}; Time: {event.startTime}</p>
         <p class="text-sm text-[#892246]"><strong>Place:</strong> {event.place}</p>
         <p class="text-sm text-[#892246] truncate"><strong>Description:</strong> {event.description}</p>
-        <button class="sosp-button mt-auto self-start bg-[#bf2b47] text-[#fcfcfc] hover:bg-[#892246] px-3 py-1 !px-3 !py-1">
+        <button class="mt-auto self-start bg-[#bf2b47] text-[#fcfcfc] px-4 py-1 rounded hover:bg-[#892246] transition">
   Join
 </button>
     </div>

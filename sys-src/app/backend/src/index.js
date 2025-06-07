@@ -1,7 +1,6 @@
 import express from 'express';
 import session from 'express-session';
 import cookieParser from 'cookie-parser';
-import crypto from 'crypto';
 import * as openid from 'openid-client';
 import { ApolloServer } from "apollo-server-express";
 import { addMocksToSchema } from "@graphql-tools/mock";
@@ -22,15 +21,21 @@ import { resolvers } from "./resolvers.js";
 const app = express();
 const port = process.env.BACKEND_PORT || 4000;
 
-// Middleware
-app.use(cors({
+const corsOptions = {
     origin: [
         process.env.FRONTEND_URL || 'http://localhost:3000',
         'https://studio.apollographql.com'
     ],
-    credentials: true
-}));
+    credentials: true,
+    optionsSuccessStatus: 200, // some legacy browsers (IE11, various SmartTVs) choke on 204
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Cookie'],
+    exposedHeaders: ['Set-Cookie']
+};
 
+app.options('*', cors(corsOptions));
+
+app.use(cors(corsOptions));
 app.use(cookieParser());
 app.use('/api', express.json());
 app.use('/api', express.urlencoded({ extended: true }));
@@ -45,8 +50,8 @@ if (process.env.NODE_ENV === 'production'){
         secret: process.env.secret || 'Super Secure Secret',
         proxy: true,
         resave: false,
-        saveUninitialized: true,
-        key: 'session.sid',
+        saveUninitialized: false,
+        name: 'session.sid',
         cookie: {
             secure: true,
             httpOnly: true,
@@ -58,8 +63,8 @@ if (process.env.NODE_ENV === 'production'){
     sessionMiddleware = session({
         secret: process.env.secret || 'Super Secure Secret',
         resave: false,
-        saveUninitialized: true,
-        key: 'session.sid',
+        saveUninitialized: false,
+        name: 'session.sid',
         cookie: {
             secure: false,
             httpOnly: true,
@@ -81,7 +86,6 @@ let config = await openid.discovery(
     process.env.GOOGLE_CLIENT_SECRET,
 );
 
-// Create Apollo Server
 try {
     const server = new ApolloServer({
         schema: addMocksToSchema({
@@ -93,6 +97,10 @@ try {
                 req,
                 res
             };
+        },
+        cors: {
+            origin: corsOptions.origin,
+            credentials: true
         }
     });
 
@@ -100,13 +108,13 @@ try {
 
     server.applyMiddleware({
         app,
-        path: '/graphql'
+        path: '/graphql',
+        cors: false
     });
 
 } catch (error) {
     console.error('Schema error:', error);
 }
-
 
 app.get('/api', (req, res) => {
     console.log(req.session.id);
@@ -188,8 +196,8 @@ app.get('/api/auth/callback', async (req, res) => {
                 req.session.save();
             }
         }
-
-        res.redirect('/api');
+        const frontendUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/userPage`;
+        res.redirect(frontendUrl);
     } catch (err) {
         console.error('Authentication error:', err);
         res.status(500).send('Authentication failed');
@@ -201,7 +209,8 @@ app.get('/api/logout', (req, res) => {
         if (err) {
             console.error('Error destroying session:', err);
         }
-        res.redirect('/api');
+        return res.send(200);
+
     });
 });
 
