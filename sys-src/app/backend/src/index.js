@@ -18,6 +18,7 @@ if (process.env.NODE_ENV !== 'production') {
 
 import { typeDefs } from "./schema.js";
 import { resolvers } from "./resolvers.js";
+import axios from "express-session/session/memory.js";
 
 const app = express();
 const port = process.env.BACKEND_PORT || 4000;
@@ -166,6 +167,63 @@ app.get('/api/profile', (req, res) => {
     }
 
     res.json(req.session.user);
+});
+
+app.post('/geocode', async (req, res) => {
+    try {
+        const { address, country, city, state } = req.body;
+
+        if (!address) {
+            return res.status(400).json({
+                error: 'Address field is required in request body'
+            });
+        }
+
+        // Build query string with optional parameters
+        let query = address;
+        if (city) query += `, ${city}`;
+        if (state) query += `, ${state}`;
+        if (country) query += `, ${country}`;
+
+        const nominatimUrl = 'https://nominatim.openstreetmap.org/search';
+        const response = await axios.get(nominatimUrl, {
+            params: {
+                q: query,
+                format: 'json',
+                limit: 1,
+                addressdetails: 1
+            },
+            headers: {
+                'User-Agent': 'SocialSpot/1.0'
+            }
+        });
+
+        if (!response.data || response.data.length === 0) {
+            return res.status(404).json({
+                error: 'Address not found',
+                query: query
+            });
+        }
+
+        const result = response.data[0];
+
+        res.json({
+            success: true,
+            query: query,
+            coordinates: {
+                latitude: parseFloat(result.lat),
+                longitude: parseFloat(result.lon)
+            },
+            display_name: result.display_name,
+            address_details: result.address
+        });
+
+    } catch (error) {
+        console.error('Geocoding error:', error.message);
+        res.status(500).json({
+            error: 'Internal server error during geocoding'
+        });
+    }
 });
 
 app.listen(port, () => {
