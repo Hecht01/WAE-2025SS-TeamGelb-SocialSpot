@@ -39,4 +39,3 @@ EXPOSE 4000
 
 # Run the application.
 CMD ["node", "src/index.js"]
-CMD ["node", "src/auth-server.js"]

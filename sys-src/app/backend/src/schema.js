@@ -1,12 +1,19 @@
-const gql = require("graphql-tag");
+import gql from "graphql-tag";
 
-const typeDefs = gql`
+export const typeDefs = gql`
     #Defining Schema here:
     type User {
-        id: ID!
+        user_uri: ID!
         name: String!
         email: String!
         profilePicture: String
+    }
+    
+    type City {
+        id: ID!
+        name: String!
+        district: String!
+        state: String!
     }
     
     type Event{
@@ -29,7 +36,25 @@ const typeDefs = gql`
         event: [Event!]!
         eventList: [Event!]!
         user: User!
+        myUser: User
         userList: [User!]!
+        getCities(
+            nameLike: String
+        ): [City!]!
+    }
+
+    type Mutation {
+        createEvent(
+            title: String!
+            description: String!
+            date: String!
+            time: String!
+            cityId: Int!
+            address: String
+            latitude: Float
+            longitude: Float
+            categoryId: Int
+            imageUrl: String
+        ): Event!
     }
 `;
-module.exports = typeDefs;

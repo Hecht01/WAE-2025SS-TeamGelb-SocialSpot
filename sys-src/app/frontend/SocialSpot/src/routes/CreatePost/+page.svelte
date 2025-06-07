@@ -53,6 +53,8 @@
     let latitude = 52;
     let longitude = 13;
 
+    const API_URL = `${import.meta.env.VITE_API_URL || 'http://localhost:4000'}/graphql`;
+
     function handleFileChange(e) {
         const file = e.target.files[0];
         filename = file?.name || '';
@@ -104,7 +106,7 @@
         };
 
         try {
-            const response = await fetch('http://localhost:4000/graphql', {
+            const response = await fetch(API_URL, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'

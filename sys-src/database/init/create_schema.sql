@@ -1,11 +1,13 @@
 CREATE EXTENSION IF NOT EXISTS pg_trgm;
 CREATE EXTENSION IF NOT EXISTS postgis;
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
 CREATE TABLE IF NOT EXISTS app_user (
     user_id SERIAL PRIMARY KEY,
-    username VARCHAR(50) UNIQUE NOT NULL,
+    google_auth_id VARCHAR(255) UNIQUE NOT NULL,
+    user_uri uuid UNIQUE NOT NULL DEFAULT gen_random_uuid(),
+    username VARCHAR(50) NOT NULL,
     email VARCHAR(100) UNIQUE NOT NULL,
-    password_hash VARCHAR(255) NOT NULL,
     profile_picture_url VARCHAR(255),
     gen_date TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     last_login TIMESTAMP WITH TIME ZONE
@@ -22,10 +24,11 @@ CREATE TABLE IF NOT EXISTS city (
     country VARCHAR(3) NOT NULL,
     postal_code INT NOT NULL,
     name VARCHAR(255) NOT NULL,
+    district VARCHAR(255) NOT NULL,
+    state VARCHAR(100) NOT NULL,
     latitude DECIMAL(10, 8) NOT NULL,
     longitude DECIMAL(11, 8) NOT NULL,
-    geo GEOGRAPHY(POINT, 4326),
-    UNIQUE (country, postal_code)
+    geo GEOGRAPHY(POINT, 4326)
 );
 
 CREATE TABLE IF NOT EXISTS event (
@@ -116,3 +119,55 @@ CREATE INDEX idx_friendships_user ON friendship (user_id);
 -- pg_trgm for accelerating text search
 CREATE INDEX idx_events_title_trgm ON event USING GIN (title gin_trgm_ops);
 CREATE INDEX idx_events_description_trgm ON event USING GIN (description gin_trgm_ops);
+
+/*
+COPY city(country, postal_code, name, latitude, longitude)
+FROM 'germany_gis.csv'
+DELIMITER ','
+CSV HEADER;
+ */
+
+CREATE OR REPLACE FUNCTION upsert_user(
+    p_google_auth_id TEXT,
+    p_username TEXT,
+    p_email TEXT,
+    p_profile_picture_url TEXT
+) RETURNS TABLE(
+    user_id BIGINT,
+    user_uri TEXT,
+    username TEXT,
+    email TEXT,
+    profile_picture_url TEXT,
+    gen_date TIMESTAMP,
+    last_login TIMESTAMP,
+    is_new_user BOOLEAN
+) AS $$
+DECLARE
+    existing_user_id BIGINT;
+BEGIN
+    -- Try to find existing user
+    SELECT u.user_id INTO existing_user_id
+    FROM app_user u
+    WHERE u.google_auth_id = p_google_auth_id;
+
+    IF existing_user_id IS NOT NULL THEN
+        -- Update existing user
+        RETURN QUERY
+        UPDATE app_user SET
+            last_login = CURRENT_TIMESTAMP,
+            profile_picture_url = p_profile_picture_url
+        WHERE app_user.user_id = existing_user_id
+        RETURNING app_user.user_id, app_user.user_uri, app_user.username,
+                  app_user.email, app_user.profile_picture_url, app_user.gen_date,
+                  app_user.last_login, false;
+    ELSE
+        -- Insert new user
+        RETURN QUERY
+        INSERT INTO app_user (google_auth_id, username, email, profile_picture_url, last_login)
+        VALUES (p_google_auth_id, p_username, p_email, p_profile_picture_url, CURRENT_TIMESTAMP)
+        RETURNING app_user.user_id, app_user.user_uri, app_user.username,
+                  app_user.email, app_user.profile_picture_url, app_user.gen_date,
+                  app_user.last_login, true;
+    END IF;
+END;
+$$ LANGUAGE plpgsql;
