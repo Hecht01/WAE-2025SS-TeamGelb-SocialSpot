@@ -7,7 +7,6 @@
     import {isOverlayOpen, eventPickedForDetailView} from "../../stores/OverlayStore"; // used for detail view overlay
 </script>
 
-<!-- make entire eventbox clickable to show the detail view overlay -->
 <!-- role, tabindex, on:keydown added because we made a div clickable -->
 <div class="event-box"
      on:click={() => {
