@@ -121,68 +121,69 @@
 </script>
 
 {#if loading}
-    <div class="w-screen h-screen flex items-center justify-center bg-gray-100">
-        <div class="w-full max-w-[34rem] h-[22rem] rounded-2xl overflow-hidden shadow-md bg-[#fcfcfc] flex flex-col">
-            <div class="p-4 flex flex-col gap-4 text-[#1f1246] h-full items-center justify-center text-center">
+    <div class="sosp-fullscreen-center">
+        <div class="event-box">
+            <div class="sosp-center-content">
+                <!-- little loading wheel animation -->
                 <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-[#541a46]"></div>
-                <h2 class="text-lg font-bold text-[#541a46]">
+                <h2 class="event-header">
                     Loading...
                 </h2>
             </div>
         </div>
     </div>
 {:else if error}
-    <div class="w-screen h-screen flex items-center justify-center bg-gray-100">
-        <div class="w-full max-w-[34rem] h-[22rem] rounded-2xl overflow-hidden shadow-md bg-[#fcfcfc] flex flex-col">
-            <div class="p-4 flex flex-col gap-4 text-[#1f1246] h-full items-center justify-center text-center">
-                <h2 class="text-lg font-bold text-[#bf2b47]">
+    <div class="sosp-fullscreen-center">
+        <div class="event-box">
+            <div class="sosp-center-content">
+                <h2 class="event-header">
                     Error
                 </h2>
-                <p class="text-sm text-[#892247]">{error}</p>
-                <button on:click={checkAuthStatus} class="bg-[#bf2b47] text-[#fcfcfc] px-6 py-2 rounded hover:bg-[#892246] transition">
+                <p class="event-p">{error}</p>
+                <button on:click={checkAuthStatus} class="sosp-button-secondary">
                     Retry
                 </button>
             </div>
         </div>
     </div>
 {:else if isLoggedIn}
-    <div class="max-w-6xl mx-auto p-4 bg-[#fcfcfc] rounded-2xl shadow-md flex flex-col space-y-6">
-        <div class="flex items-center justify-between border-b border-[#bf2b47] pb-4">
+    <div class="sosp-profile-wrapper">
+        <div class="sosp-container-userinfo">
             <div>
-                <h1 class="text-2xl font-bold text-[#541a46]">{user.name}</h1>
-                <p class="text-sm text-[#892247]">My email: {user.mail}</p>
+                <h2 class="sosp-profile-header">{user.name}'s profile</h2>
+                <p class="event-p">Email: {user.mail}</p>
             </div>
             <div class="flex flex-col items-center gap-2">
                 <img
                         src={user.avatarUrl}
                         alt="User Avatar"
-                        class="w-16 h-16 rounded-full object-cover border-2 border-[#892246]"/>
-                <button on:click={handleLogout} class="bg-[#bf2b47] text-[#fcfcfc] px-6 py-1 rounded hover:bg-[#892246] transition">
+                        class="sosp-avatar"/>
+                <button on:click={handleLogout} class="sosp-button-secondary">
                     Log Out
                 </button>
             </div>
         </div>
 
-        <div class="grid grid-cols-1 gap-2 p-4 max-w-6xl h-[28rem] mx-auto rounded-2xl border-2 border-[#bf2b47] shadow-md bg-[#fcfcfc]">
-            <h2 class="text-2xl font-bold text-[#541a46] mb-1">Your Created Events</h2>
-            <div class="flex-grow overflow-y-auto">
+        <div class="sosp-profile-card">
+            <h2 class="sosp-profile-header">Your Created Events</h2>
+            <div class="sosp-profile-card-content">
                 <EventFeed {events}/>
             </div>
         </div>
 
-        <div class="grid grid-cols-1 gap-2 p-4 max-w-6xl h-[28rem] mx-auto rounded-2xl border-2 border-[#bf2b47] shadow-md bg-[#fcfcfc]">
-            <h2 class="text-2xl font-bold text-[#541a46] mb-1">Joined Events</h2>
-            <div class="flex-grow overflow-y-auto">
+        <div class="sosp-profile-card">
+            <h2 class="sosp-profile-header">Joined Events</h2>
+            <div class="sosp-profile-card-content">
                 <EventFeed {events}/>
             </div>
         </div>
     </div>
 
 {:else}
-    <div class="w-screen h-screen flex items-center justify-center bg-gray-100">
-        <div class="w-full max-w-[34rem] h-[22rem] rounded-2xl overflow-hidden shadow-md bg-[#fcfcfc] flex flex-col">
-            <div class="p-4 flex flex-col gap-4 text-[#1f1246] h-full items-center justify-center text-center">
-                <h2 class="text-lg font-bold text-[#541a46]">
+    <div class="sosp-fullscreen-center">
+        <div class="event-box">
+            <div class="sosp-center-content">
+                <h2 class="event-header">
                     Please Log In to continue to your profile
                 </h2>
                 <button on:click={handleLogin} class="google-button">
