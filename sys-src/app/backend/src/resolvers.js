@@ -44,9 +44,6 @@ export const resolvers = {
         myUser: async (_, args, context) => {
             const { req } = context;
 
-            console.log("graphql " + req.session.id)
-            console.log(req.session.user);
-
             if (!req.session || !req.session.user) {
                 throw new AuthenticationError('Authentication required. Please log in.');
             }
@@ -59,6 +56,54 @@ export const resolvers = {
                 email: user.email,
                 profilePicture: user.profile_picture_url
             };
+        },
+
+        getCreatedEvents: async (_, args, context) => {
+            const { req } = context;
+
+            console.log("graphql " + req.session.id)
+            console.log(req.session.user);
+
+            if (!req.session || !req.session.user) {
+                throw new AuthenticationError('Authentication required. Please log in.');
+            }
+
+            const user = req.session.user;
+
+            const query = `
+                SELECT e.*, 
+                       u.user_uri,
+                       u.username, 
+                       u.email, 
+                       u.profile_picture_url
+                  FROM event e
+                  JOIN app_user u ON e.creator_id = u.user_id
+                 WHERE e.creator_id = $1
+            `;
+            const values = [ user.user_id ];
+
+            const result = await pool.query(query, values);
+
+            return result.rows.map(row => ({
+                id: row.event_id,
+                title: row.title,
+                description: row.description,
+                date: row.event_date,
+                time: row.event_time,
+                location: "TODO Ort",
+                address: row.address,
+                type: "Generic", // You can join the category table for name
+                latitude: row.latitude,
+                longitude: row.longitude,
+                thumbnail: row.image_url,
+                author: {
+                    user_uri: row.user_uri,
+                    name: row.username,
+                    email: row.email,
+                    profilePicture: row.profile_picture_url,
+                },
+                attendees: [] // Can be extended later
+            }));
         },
 
         getCities: async (_, args) => {
@@ -75,10 +120,7 @@ export const resolvers = {
                  
             `;
             const values = [ (nameLike || '' ) + "%" ];
-            console.log(values);
-
             const result = await pool.query(query, values);
-            console.log(result);
 
             return result.rows.map(row => ({
                 id: row.city_id,
@@ -104,6 +146,17 @@ export const resolvers = {
             }
 
             const user = req.session.user;
+
+            if(imageUrl) {
+                const checkQuery = `
+                    SELECT true
+                      FROM uploaded_images
+                     WHERE image_url = $1
+                       AND user_id = $2
+                `;
+                const checkResult = await pool.query(checkQuery, [imageUrl, user.user_id]);
+                console.log(checkResult);
+            }
 
             const insertQuery = `
                 INSERT INTO event (
@@ -145,6 +198,31 @@ export const resolvers = {
                 },
                 attendees: []
             };
-        }
+        },
+
+        deleteEvent : async (_, args, context) => {
+            const { eventId } = args;
+            const { req } = context;
+
+            if (!req.session || !req.session.user) {
+                throw new AuthenticationError('Authentication required. Please log in.');
+            }
+            const user = req.session.user;
+
+            const deleteQuery = `
+                WITH deleted_rows AS (
+                        DELETE FROM event
+                    WHERE event_id = $1 AND creator_id = $2
+                    RETURNING *
+                )
+                SELECT COUNT(*) FROM deleted_rows;
+            `;
+            const result = await pool.query(deleteQuery, [req, user.user_id]);
+
+            const deletedCount = parseInt(result.rows[0].count);
+
+            return deletedCount > 0;
+        },
+
     }
 };

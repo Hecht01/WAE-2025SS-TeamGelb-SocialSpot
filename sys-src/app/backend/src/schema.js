@@ -33,11 +33,12 @@ export const typeDefs = gql`
     }
     
     type Query {
-        event: [Event!]!
-        eventList: [Event!]!
+        event: [Event!]
+        eventList: [Event!]
+        getCreatedEvents: [Event!]
         user: User!
         myUser: User
-        userList: [User!]!
+        userList: [User!]
         getCities(
             nameLike: String
         ): [City!]!
@@ -56,5 +57,6 @@ export const typeDefs = gql`
             categoryId: Int
             imageUrl: String
         ): Event!
+        deleteEvent(id: ID!): Bool!
     }
 `;
