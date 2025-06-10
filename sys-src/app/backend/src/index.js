@@ -246,7 +246,7 @@ app.get('/api/profile', requireAuth, (req, res) => {
     res.json(req.session.user);
 });
 
-app.post('api/upload', requireAuth, upload.single('image'), async (req, res) => {
+app.post('/api/upload', requireAuth, upload.single('image'), async (req, res) => {
     try {
         const query = `
             INSERT INTO uploaded_images (user_id, image_url)
@@ -277,7 +277,12 @@ app.post('api/upload', requireAuth, upload.single('image'), async (req, res) => 
     }
 });
 
-app.use('api/images', express.static(path.join(__dirname, 'uploads')));
+const staticFilesPath = path.join(__dirname, '..', 'uploads');
+
+console.log(`[Express Static] Attempting to serve from: ${staticFilesPath}`);
+console.log(`[Express Static] Does this path exist? Check container filesystem.`); // Manual check needed
+
+app.use('/api/images', express.static(staticFilesPath));
 
 app.listen(port, () => {
     console.log(`Server running on ${process.env.BACKEND_URL}/api`);
