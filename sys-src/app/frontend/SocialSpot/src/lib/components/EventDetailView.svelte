@@ -1,6 +1,15 @@
 <script lang="ts">
     import {eventPickedForDetailView, isOverlayOpen} from "../../stores/OverlayStore";
     import {Heart, MessageCircle} from "lucide-svelte";
+
+    export let event: any;
+
+  function close() {
+    dispatch('close');
+  }
+
+  import { createEventDispatcher } from 'svelte';
+  const dispatch = createEventDispatcher();
 </script>
 
 {#if $eventPickedForDetailView}
