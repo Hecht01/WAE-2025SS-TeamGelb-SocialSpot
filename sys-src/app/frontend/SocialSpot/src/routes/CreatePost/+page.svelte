@@ -28,18 +28,13 @@
     .file-upload-input {
         display: none;
     }
-    .file-upload-filename {
-        font-size: 0.95rem;
-        color: #231942;
-        margin-bottom: 1rem;
-        margin-left: 0.5rem;
-    }
+  
 </style>
 
 
 <!--==========================================================================================================================================-->
 <!-- Komponente zum Erstellen des Events -->
-<script>
+<script lang="ts">
     import "$lib/style.css";
 
     let title = '';
@@ -51,17 +46,18 @@
     let filename = '';
     let imageUrl = '';
     let latitude = 52;
-    let longitude = 13;
-    let selectedFile = null;
+    let longitude = 5;
+    let selectedFile: File | null | undefined = null;
     let uploadedImageFilename = '';
 
     const API_URL = `${import.meta.env.VITE_API_URL || 'http://localhost:4000'}/api`;
     const GRAPHQL_URL = `${import.meta.env.VITE_API_URL || 'http://localhost:4000'}/graphql`;
 
-    function handleFileChange(e) {
-        const file = e.target.files[0];
+    function handleFileChange(e: Event) {
+        const file = (e.target as HTMLInputElement).files?.[0];
         selectedFile = file;
         filename = file?.name || '';
+        uploadedImageFilename = filename; // Set the filename for upload
         if (file) {
             imageUrl = URL.createObjectURL(file);
         } else {
@@ -99,9 +95,13 @@
 
     async function createEvent() {
         try {
+            console.log('selectedFile:', selectedFile);
+            console.log('uploadedImageFilename:', uploadedImageFilename);
             // First upload the image if one is selected
-            if (selectedFile !== null && uploadedImageFilename !== '') {
+            if (selectedFile !== null && uploadedImageFilename !== '') 
+            {
                 uploadedImageFilename = await uploadImage();
+                console.log('Image uploaded:', uploadedImageFilename);
             }
             const query = `
                 mutation Mutation(

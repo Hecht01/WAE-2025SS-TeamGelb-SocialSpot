@@ -13,7 +13,6 @@
   let mapContainer: HTMLDivElement;
   const API_URL = `${import.meta.env.VITE_API_URL || 'http://localhost:4000'}/graphql`;
 
-
   //GraphQL query
   const query = gql`
     query {
@@ -26,6 +25,7 @@
         date
         time
         location
+        thumbnail
       }
     }
   `;
@@ -48,6 +48,7 @@
           const marker = L.marker([event.latitude, event.longitude]);
 
           marker.on('click', () => {
+          console.log('event clicked:', event);
           eventPickedForDetailView.set(event);
           isOverlayOpen.set(true);
           });

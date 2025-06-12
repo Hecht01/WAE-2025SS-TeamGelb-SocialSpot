@@ -3,7 +3,9 @@
     import {Heart, MessageCircle} from "lucide-svelte";
 
     export let event: any;
+    const IMAGE_URL = `${import.meta.env.VITE_API_URL || 'http://localhost:4000'}/api/images/`;
 
+    
   function close() {
     dispatch('close');
   }
@@ -41,6 +43,12 @@
             }
             }}
         >
+
+            <script lang="ts">
+
+                console.log('EventDetailView:', event); // Überprüfe, ob das `thumbnail`-Feld vorhanden ist
+            </script>
+
             <!-- Event Image + Likes/Comments -->
             <div class="relative">
                 <button
@@ -49,8 +57,9 @@
                         isOverlayOpen.set(false);
                         eventPickedForDetailView.set(null);
                         }}>&times</button>
-                <img src="{$eventPickedForDetailView.image}" alt="{$eventPickedForDetailView.title}" class="w-full h-70 object-cover" />
-                <div class="absolute bottom-1 right-2 flex gap-6 text-sm text-[#fcfcfc] bg-[#bf2b47]/80 px-3 py-1 rounded-xl">
+                    
+
+                    <img src={`${IMAGE_URL}${$eventPickedForDetailView.thumbnail}`} alt="{$eventPickedForDetailView.title}" class="w-full h-70 object-cover" />                <div class="absolute bottom-1 right-2 flex gap-6 text-sm text-[#fcfcfc] bg-[#bf2b47]/80 px-3 py-1 rounded-xl">
                     <div class="flex items-center gap-1">
                         <Heart class="w-5 h-5 text-white" />
                         <span>{$eventPickedForDetailView.likes}</span>
