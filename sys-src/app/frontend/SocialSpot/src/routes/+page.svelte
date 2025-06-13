@@ -1,11 +1,13 @@
 <script>
     import EventFeed from '$lib/components/EventFeed.svelte';
+    import { onMount } from 'svelte';
 
     // dummy event list - all events
+    /*
     let events = [
         {
             id: 1,
-            image: '/exampleOpenMicNight.jpg',
+            thumbnail: '/exampleOpenMicNight.jpg',
             title: 'Open Mic Night',
             place: 'Amberg - Main Street 123',
             description: 'Join us for an evening of music, poetry, comedy, and more at our open mic night. Whether you\'re performing or cheering from the crowd, it\'s a fun and welcoming space for all creatives!',
@@ -17,7 +19,7 @@
         },
         {
             id: 2,
-            image: '/exampleDult.jpg',
+            thumbnail: '/exampleDult.jpg',
             title: 'Amberger Dult',
             place: 'Amberg - Other Street 45',
             description: 'Come check out this year’s Amberger Dult! Enjoy sweet cotton candy, thrilling rides, tasty food, and loads of fun attractions for everyone. Don’t miss out on the biggest celebration of the year!',
@@ -29,7 +31,7 @@
         },
         {
             id: 3,
-            image: '/examplePride.jpg',
+            thumbnail: '/examplePride.jpg',
             title: 'Pride March 2025',
             place: 'Amberg - City Center',
             description: 'Join the celebration at this year’s Pride March! Dance, cheer, and show your colors as we come together for love, equality, and fun. All are welcome—let’s make this a day to remember!',
@@ -41,7 +43,7 @@
         },
         {
             id:4,
-            image: '/exampleRenFair.jpg',
+            thumbnail: '/exampleRenFair.jpg',
             title: 'Renaissance Fair',
             place: 'Amberg - Old Castle',
             description: 'Join us for this year’s Pride March in Amberg! We’ll kick off at city center, march through the vibrant streets, and finish with a celebration at the park. Bring your friends, your flags, and your best energy for a colorful journey of love and pride!',
@@ -53,7 +55,7 @@
         },
         {
             id: 5,
-            image: '/exampleShelter.jpg',
+            thumbnail: '/exampleShelter.jpg',
             title: 'Animal Shelter Festival',
             place: 'Amberg - Animal Shelter Purrfection',
             description: 'You can meet all the cute animals, and if that’s not enough, there’s also delicious food and awesome entertainment for everyone. Come join the fun and support our furry friends!',
@@ -65,7 +67,7 @@
         },
         {
             id: 6,
-            image: '/exampleNewYears.jpg',
+            thumbnail: '/exampleNewYears.jpg',
             title: 'New Years Party',
             place: 'Amberg - Party Center',
             description: 'Celebrate the New Year with us! Enjoy fireworks, champagne for everyone, and a night full of fun and excitement. Don’t miss out on the best party to start the year right!',
@@ -75,7 +77,60 @@
             likes: 17,
             comments: 3,
         }
-    ]
+    ]*/
+
+    let events = [];
+    let loading = true;
+    let error = null;
+
+    const query = `
+    query {
+      eventList {
+        id
+        title
+        description
+        date
+        time
+        address
+        location
+        type
+        latitude
+        longitude
+        thumbnail
+        author {
+          name
+          email
+          profilePicture
+        }
+      }
+    }
+  `;
+
+    onMount(async () => {
+        try {
+            const res = await fetch('http://localhost:4000/graphql', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ query })
+            });
+
+            const json = await res.json();
+            events = json.data.eventList;
+        } catch (err) {
+            error = err.message;
+        } finally {
+            loading = false;
+        }
+    });
+
 </script>
 
-<EventFeed {events}/>
+{#if loading}
+    <p>Loading Events...</p>
+{:else if error}
+    <p>Error while Loading: {error}</p>
+{:else}
+    <EventFeed {events} />
+{/if}

@@ -49,7 +49,6 @@
                 console.log('EventDetailView:', event); // Überprüfe, ob das `thumbnail`-Feld vorhanden ist
             </script>
 
-            <!-- Event Image + Likes/Comments -->
             <div class="relative">
                 <!-- x button in top right corner -->
                 <button

@@ -23,7 +23,8 @@
         }}
 >
     <div class="event-image">
-        <img src="{event.image}" alt="{event.title}" class="w-full h-40 object-cover" />
+        <img src="{event.thumbnail}" alt="{event.title}" class="w-full h-40 object-cover" />
+        <!-- Uncomment when Likes and Comments are stored in Database
         <div class="event-image-overlay">
             <div class="event-image-overlay-item">
                 <Heart class="w-5 h-5 text-white" />
@@ -33,7 +34,7 @@
                 <MessageCircle class="w-5 h-5 text-white" />
                 <span>{event.comments}</span>
             </div>
-        </div>
+        </div> -->
     </div>
 
     <div class="event-infos">
@@ -43,8 +44,8 @@
                 eventPickedForDetailView.set(event);
             }} >{event.title}</button>
         </h2>
-        <p class="event-p"><strong>Date:</strong> {event.startDate} - {event.endDate}; Time: {event.startTime}</p>
-        <p class="event-p"><strong>Place:</strong> {event.place}</p>
+        <p class="event-p"><strong>Date:</strong> {event.date}; Time: {event.time}</p>
+        <p class="event-p"><strong>Place:</strong> {event.address}</p>
         <p class="event-p truncate"><strong>Description:</strong> {event.description}</p>
         <button class="sosp-button-secondary">Join</button>
     </div>
