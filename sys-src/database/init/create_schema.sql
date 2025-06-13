@@ -84,6 +84,12 @@ CREATE TABLE IF NOT EXISTS friendship (
     CHECK (user_id != friend_id)
 );
 
+CREATE TABLE IF NOT EXISTS uploaded_images (
+    user_id INTEGER REFERENCES app_user (user_id) ON DELETE NO ACTION,
+    image_url VARCHAR(255) UNIQUE NOT NULL,
+    gen_date TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Trigger to automatically populate geo from latitude & longitude
 CREATE OR REPLACE FUNCTION update_geo()
 RETURNS TRIGGER AS

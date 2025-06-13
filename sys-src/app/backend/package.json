@@ -8,7 +8,7 @@
     "compile": "tsc",
     "dev": "nodemon src/index",
     "start": "npm run compile && nodemon ./dist/index.js && nodemon src/index",
-    "test": "cross-env NODE_ENV=test jest"
+    "test": "cross-env NODE_OPTIONS=--experimental-vm-modules jest"
   },
   "author": "",
   "license": "ISC",
@@ -24,6 +24,7 @@
     "graphql": "^16.11.0",
     "graphql-playground-middleware-express": "^1.7.23",
     "graphql-tag": "^2.12.6",
+    "multer": "^2.0.1",
     "openid-client": "^6.5.0",
     "pg": "^8.16.0"
   },

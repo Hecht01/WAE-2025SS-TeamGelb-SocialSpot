@@ -1,5 +1,7 @@
 import express from 'express';
 import session from 'express-session';
+import multer from 'multer';
+import path from 'path';
 import cookieParser from 'cookie-parser';
 import * as openid from 'openid-client';
 import { ApolloServer } from "apollo-server-express";
@@ -7,6 +9,12 @@ import { addMocksToSchema } from "@graphql-tools/mock";
 import { makeExecutableSchema } from "@graphql-tools/schema";
 import cors from 'cors';
 import {pool, upsertUserGoogle} from './database.js';
+import { fileURLToPath } from 'url';
+import {uuidv4} from "@graphql-tools/mock/utils";
+import * as fs from "node:fs";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 if (process.env.NODE_ENV !== 'production') {
     console.log('dev environment')
@@ -17,9 +25,23 @@ if (process.env.NODE_ENV !== 'production') {
 
 import { typeDefs } from "./schema.js";
 import { resolvers } from "./resolvers.js";
+import axios from "express-session/session/memory.js";
 
 const app = express();
 const port = process.env.BACKEND_PORT || 4000;
+
+const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        cb(null, 'uploads/')
+    },
+    filename: function (req, file, cb) {
+        // Generate UUID and preserve file extension
+        const uuid = uuidv4();
+        const extension = path.extname(file.originalname);
+        cb(null, uuid + extension);
+    }
+});
+const upload = multer({ storage: storage });
 
 const corsOptions = {
     origin: [
@@ -214,15 +236,58 @@ app.get('/api/logout', (req, res) => {
     });
 });
 
-app.get('/api/profile', (req, res) => {
+const requireAuth = (req, res, next) => {
     if (!req.session.user) {
         return res.status(401).json({ error: 'Not authenticated' });
     }
+    next();
+};
 
+app.get('/api/profile', requireAuth, (req, res) => {
     res.json(req.session.user);
 });
+
+app.post('/api/upload', requireAuth, upload.single('image'), async (req, res) => {
+    try {
+        const query = `
+            INSERT INTO uploaded_images (user_id, image_url)
+            VALUES ($1, $2)
+        `;
+
+        const result = await pool.query(query, [
+            req.session.user.user_id,
+            req.file.filename
+        ]);
+
+        console.log("File uploaded:", req.file);
+        res.json({
+            message: "Upload successful",
+            filename: req.file.filename
+        });
+
+    } catch (error) {
+        console.error('Database error:', error);
+
+        fs.unlink(req.file.path, (err) => {
+            if (err) console.error('Error deleting file:', err);
+        });
+
+        res.status(500).json({
+            error: 'Failed to save image information to database'
+        });
+    }
+})
+
+
+const staticFilesPath = path.join(__dirname, '..', 'uploads');
+
+console.log(`[Express Static] Attempting to serve from: ${staticFilesPath}`);
+console.log(`[Express Static] Does this path exist? Check container filesystem.`); // Manual check needed
+
+app.use('/api/images', express.static(staticFilesPath));
 
 app.listen(port, () => {
     console.log(`Server running on ${process.env.BACKEND_URL}/api`);
     console.log(`GraphQL endpoint: ${process.env.BACKEND_URL}/graphql`);
-});
+})
+

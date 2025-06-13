@@ -28,18 +28,13 @@
     .file-upload-input {
         display: none;
     }
-    .file-upload-filename {
-        font-size: 0.95rem;
-        color: #231942;
-        margin-bottom: 1rem;
-        margin-left: 0.5rem;
-    }
+  
 </style>
 
 
 <!--==========================================================================================================================================-->
 <!-- Komponente zum Erstellen des Events -->
-<script>
+<script lang="ts">
     import "$lib/style.css";
 
     let title = '';
@@ -51,13 +46,18 @@
     let filename = '';
     let imageUrl = '';
     let latitude = 52;
-    let longitude = 13;
+    let longitude = 5;
+    let selectedFile: File | null | undefined = null;
+    let uploadedImageFilename = '';
 
-    const API_URL = `${import.meta.env.VITE_API_URL || 'http://localhost:4000'}/graphql`;
+    const API_URL = `${import.meta.env.VITE_API_URL || 'http://localhost:4000'}/api`;
+    const GRAPHQL_URL = `${import.meta.env.VITE_API_URL || 'http://localhost:4000'}/graphql`;
 
-    function handleFileChange(e) {
-        const file = e.target.files[0];
+    function handleFileChange(e: Event) {
+        const file = (e.target as HTMLInputElement).files?.[0];
+        selectedFile = file;
         filename = file?.name || '';
+        uploadedImageFilename = filename; // Set the filename for upload
         if (file) {
             imageUrl = URL.createObjectURL(file);
         } else {
@@ -65,52 +65,89 @@
         }
     }
 
-    async function createEvent() {
-        const query = `
-            mutation Mutation(
-                $title: String!, 
-                $description: String!, 
-                $date: String!, 
-                $time: String!, 
-                $cityId: Int!, 
-                $creatorId: Int!,
-                $latitude: Float, 
-                $longitude: Float
-            ) {
-                createEvent(
-                    title: $title, 
-                    description: $description, 
-                    date: $date, 
-                    time: $time, 
-                    cityId: $cityId, 
-                    creatorId: $creatorId,
-                    latitude: $latitude,
-                    longitude: $longitude
-                ) {
-                    id
-                    title
-                    description
-                }
-            }
-        `;
+    async function uploadImage() {
+        if (!selectedFile) {
+            return null;
+        }
 
-        const variables = {
-            title,
-            description,
-            date,
-            time,
-            cityId,
-            creatorId,
-            latitude,
-            longitude
-        };
+        const formData = new FormData();
+        formData.append('image', selectedFile);
 
         try {
-            const response = await fetch(API_URL, {
+            const response = await fetch(`${API_URL}/upload`, {
+                method: 'POST',
+                credentials: 'include', // Important for session cookies
+                body: formData
+            });
+
+            if (!response.ok) {
+                throw new Error(`Upload failed: ${response.statusText}`);
+            }
+
+            const result = await response.json();
+            console.log('Image uploaded successfully:', result);
+            return result.filename;
+        } catch (error) {
+            console.error('Error uploading image:', error);
+            throw error;
+        }
+    }
+
+    async function createEvent() {
+        try {
+            console.log('selectedFile:', selectedFile);
+            console.log('uploadedImageFilename:', uploadedImageFilename);
+            // First upload the image if one is selected
+            if (selectedFile !== null && uploadedImageFilename !== '') 
+            {
+                uploadedImageFilename = await uploadImage();
+                console.log('Image uploaded:', uploadedImageFilename);
+            }
+            const query = `
+                mutation Mutation(
+                    $title: String!,
+                    $description: String!,
+                    $date: String!,
+                    $time: String!,
+                    $cityId: Int!,
+                    $latitude: Float,
+                    $longitude: Float,
+                    $imageUrl: String
+                ) {
+                    createEvent(
+                        title: $title,
+                        description: $description,
+                        date: $date,
+                        time: $time,
+                        cityId: $cityId,
+                        latitude: $latitude,
+                        longitude: $longitude,
+                        imageUrl: $imageUrl
+                    ) {
+                        id
+                        title
+                        description
+                    }
+                }
+            `;
+
+            const variables = {
+                title,
+                description,
+                date,
+                time,
+                cityId,
+                latitude,
+                longitude,
+                imageUrl: uploadedImageFilename || null
+            };
+
+            const response = await fetch(GRAPHQL_URL, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
+                credentials: "include",
                 body: JSON.stringify({
                     query,
                     variables
@@ -118,7 +155,24 @@
             });
 
             const result = await response.json();
+
+            if (result.errors) {
+                console.error('GraphQL errors:', result.errors);
+                alert('Error creating event: ' + result.errors[0].message);
+                return;
+            }
+
             console.log('Event created:', result.data.createEvent);
+
+            // Reset form
+            title = '';
+            description = '';
+            date = '';
+            time = '';
+            filename = '';
+            imageUrl = '';
+            selectedFile = null;
+            uploadedImageFilename = '';
         } catch (error) {
             console.error('Error creating event:', error);
         }

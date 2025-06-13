@@ -19,6 +19,8 @@ services:
     build: ./app/backend
     env_file:
       - .env
+    volumes:
+      - uploads-volume:/app/uploads
     depends_on:
       postgres:
         condition: service_healthy
@@ -44,3 +46,4 @@ services:
       - webserver
 volumes:
   pgdata:
+  uploads-volume:

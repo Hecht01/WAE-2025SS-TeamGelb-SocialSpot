@@ -1,15 +1,126 @@
-import {pool} from './database.js';
-import {AuthenticationError} from "apollo-server-express";
+import axios from 'axios';
+
+// Geocoding helper function
+const geocodeAddress = async (address, city, state, country) => {
+    try {
+        // Build query string with optional parameters
+        let query = address || '';
+        if (city) query += query ? `, ${city}` : city;
+        if (state) query += `, ${state}`;
+        if (country) query += `, ${country}`;
+
+        if (!query.trim()) {
+            throw new Error('No address information provided for geocoding');
+        }
+
+        const nominatimUrl = 'https://nominatim.openstreetmap.org/search';
+        const response = await axios.get(nominatimUrl, {
+            params: {
+                q: query,
+                format: 'json',
+                limit: 1,
+                addressdetails: 1
+            },
+            headers: {
+                'User-Agent': 'SocialSpot/1.0'
+            }
+        });
+
+        if (!response.data || response.data.length === 0) {
+            throw new Error(`Address not found: ${query}`);
+        }
+
+        const result = response.data[0];
+        return {
+            latitude: parseFloat(result.lat),
+            longitude: parseFloat(result.lon),
+            display_name: result.display_name
+        };
+    } catch (error) {
+        console.error('Geocoding error:', error.message);
+        throw new Error(`Geocoding failed: ${error.message}`);
+    }
+};
 
 export const resolvers = {
     Query: {
-        eventList: async () => {
-            const res = await pool.query(`
-                SELECT e.*, u.user_uri, u.username, u.email, u.profile_picture_url
+        userList: async (parent, args, context) => {
+            const result = await context.pool.query('SELECT * FROM app_user');
+            return result.rows;
+        },
+
+        eventList: async (_, __, context) => {
+            const res = await context.pool.query(`
+                SELECT e.*, u.username, u.email, u.profile_picture_url
                 FROM event e
-                JOIN app_user u ON e.creator_id = u.user_id
+                         JOIN app_user u ON e.creator_id = u.user_id
             `);
             return res.rows.map(row => ({
+                id: row.event_id,
+                title: row.title,
+                description: row.description,
+                date: row.event_date,
+                time: row.event_time,
+                location: "TODO Ort",
+                address: row.address,
+                type: "Generic",
+                latitude: row.latitude,
+                longitude: row.longitude,
+                thumbnail: row.image_url,
+                author: {
+                    user_uri: row.user_uri,
+                    name: row.username,
+                    email: row.email,
+                    profilePicture: row.profile_picture_url,
+                },
+                attendees: []
+            }));
+        },
+
+        myUser: async (_, args, context) => {
+            const { req } = context;
+
+            if (!req.session || !req.session.user) {
+                throw new AuthenticationError('Authentication required. Please log in.');
+            }
+
+            const user = req.session.user;
+
+            return {
+                user_uri: user.user_uri,
+                name: user.username,
+                email: user.email,
+                profilePicture: user.profile_picture_url
+            };
+        },
+
+        getCreatedEvents: async (_, args, context) => {
+            const { req } = context;
+
+            console.log("graphql " + req.session.id)
+            console.log(req.session.user);
+
+            if (!req.session || !req.session.user) {
+                throw new AuthenticationError('Authentication required. Please log in.');
+            }
+
+            const user = req.session.user;
+
+            const query = `
+                SELECT e.*, 
+                       u.user_uri,
+                       u.username, 
+                       u.email, 
+                       u.profile_picture_url
+                  FROM event e
+                  JOIN app_user u ON e.creator_id = u.user_id
+                 WHERE e.creator_id = $1
+            `;
+            const values = [ user.user_id ];
+
+            const result = await context.pool.query(query, values);
+
+            return result.rows.map(row => ({
                 id: row.event_id,
                 title: row.title,
                 description: row.description,
@@ -31,37 +142,7 @@ export const resolvers = {
             }));
         },
 
-        userList: async () => {
-            const res = await pool.query(`SELECT * FROM app_user`);
-            return res.rows.map(user => ({
-                id: user.user_id,
-                name: user.username,
-                email: user.email,
-                profilePicture: user.profile_picture_url
-            }));
-        },
-
-        myUser: async (_, args, context) => {
-            const { req } = context;
-
-            console.log("graphql " + req.session.id)
-            console.log(req.session.user);
-
-            if (!req.session || !req.session.user) {
-                throw new AuthenticationError('Authentication required. Please log in.');
-            }
-
-            const user = req.session.user;
-
-            return {
-                user_uri: user.user_uri,
-                name: user.username,
-                email: user.email,
-                profilePicture: user.profile_picture_url
-            };
-        },
-
-        getCities: async (_, args) => {
+        getCities: async (_, args, context) => {
             const { nameLike } = args;
             const query = `
                 SELECT min(city_id) as city_id,
@@ -75,10 +156,7 @@ export const resolvers = {
                  
             `;
             const values = [ (nameLike || '' ) + "%" ];
-            console.log(values);
-
-            const result = await pool.query(query, values);
-            console.log(result);
+            const result = await context.pool.query(query, values);
 
             return result.rows.map(row => ({
                 id: row.city_id,
@@ -94,7 +172,7 @@ export const resolvers = {
             const {
                 title, description, date, time,
                 cityId, address, latitude, longitude,
-                categoryId, imageUrl
+                categoryId, imageUrl, city, state, country
             } = args;
 
             const { req } = context;
@@ -105,24 +183,65 @@ export const resolvers = {
 
             const user = req.session.user;
 
+            if(imageUrl) {
+                const checkQuery = `
+                    SELECT true
+                      FROM uploaded_images
+                     WHERE image_url = $1
+                       AND user_id = $2
+                `;
+                const checkResult = await context.pool.query(checkQuery, [imageUrl, user.user_id]);
+                console.log(checkResult);
+            }
+
+            let finalLatitude = latitude;
+            let finalLongitude = longitude;
+
+            // If coordinates are not provided, try to geocode the address
+            if (!latitude || !longitude) {
+                try {
+                    // First try to get city info from database if cityId is provided
+                    let cityName = city;
+                    let stateName = state;
+
+                    if (!cityName && cityId) {
+                        const cityQuery = `SELECT name, district, state FROM city WHERE city_id = $1`;
+                        const cityResult = await context.pool.query(cityQuery, [cityId]);
+                        if (cityResult.rows.length > 0) {
+                            cityName = cityResult.rows[0].name;
+                            stateName = cityResult.rows[0].state || cityResult.rows[0].district;
+                        }
+                    }
+
+                    const geocodeResult = await geocodeAddress(address, cityName, stateName, country);
+                    finalLatitude = geocodeResult.latitude;
+                    finalLongitude = geocodeResult.longitude;
+
+                    console.log(`Geocoded address: ${address}, ${cityName} -> ${finalLatitude}, ${finalLongitude}`);
+                } catch (geocodeError) {
+                    console.warn('Geocoding failed:', geocodeError.message);
+                    // Continue without coordinates if geocoding fails
+                    finalLatitude = null;
+                    finalLongitude = null;
+                }
+            }
+
             const insertQuery = `
                 INSERT INTO event (
                     title, description, event_date, event_time,
                     city_id, address, latitude, longitude,
                     creator_id, category_id, image_url
-                )
-                VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
-                RETURNING *
+                ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
+                    RETURNING *
             `;
-
 
             const values = [
                 title, description, date, time,
-                cityId, address, latitude, longitude,
+                cityId, address, finalLatitude, finalLongitude,
                 user.user_id, categoryId, imageUrl
             ];
 
-            const result = await pool.query(insertQuery, values);
+            const result = await context.pool.query(insertQuery, values);
             const event = result.rows[0];
 
             return {
@@ -131,7 +250,7 @@ export const resolvers = {
                 description: event.description,
                 date: event.event_date,
                 time: event.event_time,
-                location: 4207, //event.city_id.toString(),
+                location: event.city_id ? event.city_id.toString() : "Unknown",
                 address: event.address,
                 type: "Generic",
                 latitude: event.latitude,
@@ -145,6 +264,31 @@ export const resolvers = {
                 },
                 attendees: []
             };
-        }
+        },
+
+        deleteEvent : async (_, args, context) => {
+            const { eventId } = args;
+            const { req } = context;
+
+            if (!req.session || !req.session.user) {
+                throw new AuthenticationError('Authentication required. Please log in.');
+            }
+            const user = req.session.user;
+
+            const deleteQuery = `
+                WITH deleted_rows AS (
+                        DELETE FROM event
+                    WHERE event_id = $1 AND creator_id = $2
+                    RETURNING *
+                )
+                SELECT COUNT(*) FROM deleted_rows;
+            `;
+            const result = await context.pool.query(deleteQuery, [eventId, user.user_id]);
+
+            const deletedCount = parseInt(result.rows[0].count);
+
+            return deletedCount > 0;
+        },
+
     }
 };

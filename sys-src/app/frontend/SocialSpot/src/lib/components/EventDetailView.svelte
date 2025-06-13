@@ -1,6 +1,17 @@
 <script lang="ts">
     import {eventPickedForDetailView, isOverlayOpen} from "../../stores/OverlayStore";
     import {Heart, MessageCircle} from "lucide-svelte";
+
+    export let event: any;
+    const IMAGE_URL = `${import.meta.env.VITE_API_URL || 'http://localhost:4000'}/api/images/`;
+
+
+  function close() {
+    dispatch('close');
+  }
+
+  import { createEventDispatcher } from 'svelte';
+  const dispatch = createEventDispatcher();
 </script>
 
 {#if $eventPickedForDetailView}
@@ -32,6 +43,13 @@
             }
             }}
         >
+
+            <script lang="ts">
+
+                console.log('EventDetailView:', event); // Überprüfe, ob das `thumbnail`-Feld vorhanden ist
+            </script>
+
+            <!-- Event Image + Likes/Comments -->
             <div class="relative">
                 <!-- x button in top right corner -->
                 <button
@@ -40,8 +58,9 @@
                         isOverlayOpen.set(false);
                         eventPickedForDetailView.set(null);
                         }}>&times</button>
-                <img src="{$eventPickedForDetailView.image}" alt="{$eventPickedForDetailView.title}" class="event-image-large" />
-                <div class="event-image-overlay">
+
+
+                    <img src={`${IMAGE_URL}${$eventPickedForDetailView.thumbnail}`} alt="{$eventPickedForDetailView.title}" class="event-image-large" />                <div class="event-image-overlay">
                     <div class="event-image-overlay-item">
                         <Heart class="w-5 h-5 text-white" />
                         <span>{$eventPickedForDetailView.likes}</span>

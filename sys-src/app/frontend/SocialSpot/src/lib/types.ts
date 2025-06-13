@@ -1,7 +1,7 @@
 export interface EventData {
     id: number;
     title: string;
-    image: string;
+    thumbnail: string;
     place: string;
     description: string;
     startDate: string;
