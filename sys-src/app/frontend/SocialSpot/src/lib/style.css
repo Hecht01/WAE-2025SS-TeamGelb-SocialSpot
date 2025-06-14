@@ -19,14 +19,14 @@
 }
 
 .sosp-input:focus, .modern-select:focus {
-    border-color: #D7264E;
+    border-color: #bf2b47;
     outline: none;
 }
 
 .sosp-button {
     padding: 0.75rem 1rem;
     background: #fff;
-    color: #D7264E;
+    color: #bf2b47;
     border: 2px solid #231942;
     border-radius: 0.5rem;
     font-size: 1rem;
@@ -36,11 +36,197 @@
 }
 
 .sosp-header {
-    color:#D7264E;
+    color:#bf2b47;
     font-weight: bold;
 }
 
 .sosp-button:hover {
-    background: #D7264E;
+    background: #bf2b47;
     color:rgb(255, 255, 255);
+}
+
+/* for smaller buttons */
+.sosp-button-secondary {
+    margin-top: auto;
+    align-self: flex-start;
+    background: #bf2b47;
+    color: #fcfcfc;
+    padding: 0.25rem 1rem;
+    border-radius: 0.25rem;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.15s ease-in-out;
+}
+
+.sosp-button-secondary:hover {
+    background: #892246;
+}
+
+/* EventBox styles */
+.event-box {
+    width: 100%;
+    max-width: 34rem;
+    height: 22rem;
+    border-radius: 1rem;
+    overflow: hidden;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+    background-color: #fcfcfc;
+    display: flex;
+    flex-direction: column;
+}
+
+.event-image {
+    width: 100%;
+    height: 10rem;
+    object-fit: cover;
+    position: relative;
+}
+
+.event-image-overlay {
+    position: absolute;
+    bottom: 0.25rem;
+    right: 0.5rem;
+    display: flex;
+    gap: 1.5rem;
+    font-size: 0.875rem; /* text-sm */
+    color: #fcfcfc;
+    background-color: rgba(191, 43, 71, 0.8); /* rgb equals #bfb247*/
+    padding: 0.25rem 0.75rem;
+    border-radius: 0.75rem;
+}
+
+.event-image-overlay-item {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.event-infos {
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    color: #1f1246;
+    height: 100%;
+}
+
+.event-header {
+    font-size: 1.125rem; /* text-lg */
+    font-weight: bold;
+    color: #541a46;
+}
+
+.event-p {
+    font-size: 0.875rem;
+    color: #892246;
+}
+
+/* Detail View styles */
+.event-box-large {
+    width: 100%;
+    max-width: 72rem;
+    height: 34rem;
+    border-radius: 1rem;
+    overflow: hidden;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+    background-color: #fcfcfc;
+    display: flex;
+    flex-direction: column;
+}
+
+.event-image-large {
+    width: 100%;
+    height: 17.5rem;
+    object-fit: cover;
+}
+
+/* Profile Page styles */
+.sosp-fullscreen-center {
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #f3f4f6;
+}
+
+.sosp-center-content {
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    color: #1f1246;
+    height: 100%;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+}
+
+.sosp-profile-wrapper {
+    max-width: 72rem;
+    margin: 0 auto;
+    padding: 1rem;
+    background-color: #fcfcfc;
+    border-radius: 1rem;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.sosp-profile-card {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+    padding: 1rem;
+    width: 68rem;
+    height: 28rem;
+    margin: 0 auto;
+    border-radius: 1rem;
+    /*border: 2px solid #bf2b47;*/
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+    background-color: #fcfcfc;
+    overflow: hidden;
+}
+
+.sosp-profile-header {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #541a46;
+}
+
+.sosp-profile-card-content {
+    flex-grow: 1;
+    overflow-y: auto;
+}
+
+.sosp-avatar{
+    width: 4rem;
+    height: 4rem;
+    border-radius: 100%;
+    object-fit: cover;
+    border: 2px solid #892246;
+}
+
+.sosp-container-userinfo{
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid #892246;
+    padding-bottom: 1rem;
+}
+
+/* Nav Bar styles */
+.sosp-navbar-button {
+    color: #1f1246;
+    font-weight: bold;
+    padding: 0.5rem 0.75rem;
+    border-radius: 0.25rem;
+    background: transparent;
+    cursor: pointer;
+}
+
+.sosp-navbar-button:hover {
+    background-color: rgba(191, 43, 71, 0.1); /* rgb equals #bf2b47 */
+    color: #bf2b47;
 }

@@ -3,6 +3,7 @@
     import "../app.css";
     import EventDetailView from "$lib/components/EventDetailView.svelte";
     import {isOverlayOpen} from "../stores/OverlayStore";
+    import "$lib/style.css"
 </script>
 
 <NavBar></NavBar>
