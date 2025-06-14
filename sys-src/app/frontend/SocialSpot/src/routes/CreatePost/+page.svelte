@@ -177,29 +177,35 @@
             console.error('Error creating event:', error);
         }
     }
+
+    async function handleSubmit(event: SubmitEvent) {
+        event.preventDefault(); // Verhindert Standard-Form-Submit
+        await createEvent();
+    }
 </script>
 
 
 <!--==========================================================================================================================================-->
 <!-- Hauptinhalt der Seite -->
+<form on:submit={handleSubmit}>
 <div class="sosp-container">
     <label for="titel">Titel</label>
-    <input id="titel" type="text" class="sosp-input" placeholder="Titel des Events" bind:value={title} />
+    <input id="titel" type="text" class="sosp-input" placeholder="Titel des Events" bind:value={title} required/>
 
     <label for="ort" style="margin-top:1rem;">Ort</label>
-    <input id="ort" type="text" class="sosp-input" placeholder="Ort an dem das Event stattfindet" />
+    <input id="ort" type="text" class="sosp-input" placeholder="Ort an dem das Event stattfindet" required/>
 
     <label for="beschreibung" style="margin-top:1rem;">Beschreibung</label>
-    <input id="beschreibung" type="text" class="sosp-input" placeholder="Beschreibung des Events" bind:value={description} />
+    <input id="beschreibung" type="text" class="sosp-input" placeholder="Beschreibung des Events" bind:value={description} required/>
 
     <label for="startdatum" style="margin-top:1rem;">Startdatum</label>
-    <input id="startdatum" type="date" class="sosp-input" placeholder="Startdatum" bind:value={date} />
+    <input id="startdatum" type="date" class="sosp-input" placeholder="Startdatum" bind:value={date} required/>
 
     <label for="dauer" style="margin-top:1rem;">Dauer des Events (in Tagen)</label>
     <input id="dauer" type="number" class="sosp-input" placeholder="Dauer des Events in Tagen" min="1" />
     
     <label for="startzeit" style="margin-top:1rem;">Startzeit</label>
-    <input id="startzeit" type="time" class="sosp-input" placeholder="Startzeit" bind:value={time} />
+    <input id="startzeit" type="time" class="sosp-input" placeholder="Startzeit" bind:value={time} required/>
 
     <label for="bild" style="margin-top:1rem;">Bild hochladen</label>
     {#if imageUrl}
@@ -222,5 +228,6 @@
     <!-- Abstand vor den Buttons -->
     <div style="height: 2rem;"></div>
 
-    <button class="sosp-button" on:click={createEvent}>Event Anlegen</button>
+    <button type="submit" class="sosp-button">Event Anlegen</button>
 </div>
+</form>

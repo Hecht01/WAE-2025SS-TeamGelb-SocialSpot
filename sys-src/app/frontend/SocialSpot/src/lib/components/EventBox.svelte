@@ -5,6 +5,8 @@
     export let event: EventData;
 
     import {isOverlayOpen, eventPickedForDetailView} from "../../stores/OverlayStore"; // used for detail view overlay
+
+    const API_URL = `${import.meta.env.VITE_API_URL || 'http://localhost:4000'}/api`;
 </script>
 
 <!-- role, tabindex, on:keydown added because we made a div clickable -->
@@ -23,7 +25,7 @@
         }}
 >
     <div class="event-image">
-        <img src="{event.thumbnail}" alt="{event.title}" class="w-full h-40 object-cover" />
+        <img src="{API_URL}/images/{event.thumbnail}" alt="{event.title}" class="w-full h-40 object-cover" />
         <!-- Uncomment when Likes and Comments are stored in Database
         <div class="event-image-overlay">
             <div class="event-image-overlay-item">
@@ -44,7 +46,7 @@
                 eventPickedForDetailView.set(event);
             }} >{event.title}</button>
         </h2>
-        <p class="event-p"><strong>Date:</strong> {event.date}; Time: {event.time}</p>
+        <p class="event-p"><strong>Date:</strong> {new Date(parseInt(event.date) ).toLocaleDateString()}; Time: {event.time.substring(0,5)}</p>
         <p class="event-p"><strong>Place:</strong> {event.address}</p>
         <p class="event-p truncate"><strong>Description:</strong> {event.description}</p>
         <button class="sosp-button-secondary">Join</button>

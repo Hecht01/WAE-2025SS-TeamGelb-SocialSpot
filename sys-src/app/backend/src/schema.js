@@ -1,43 +1,47 @@
 import gql from "graphql-tag";
 
 export const typeDefs = gql`
+    #Defining Schema here:
     type User {
-        id: ID!
-        user_uri: String
+        user_uri: ID!
         name: String!
         email: String!
         profilePicture: String
     }
 
-    type Event {
-        id: ID!
-        title: String!
-        description: String
-        date: String!
-        time: String!
-        location: String
-        address: String
-        type: String
-        latitude: Float
-        longitude: Float
-        thumbnail: String
-        author: User!
-        attendees: [User!]!
-    }
-
     type City {
         id: ID!
         name: String!
-        district: String
-        state: String
+        district: String!
+        state: String!
+    }
+
+    type Event{
+        id: ID!
+        author:  User!
+        title: String!
+        description: String!
+        date: String!
+        time: String!
+        location: String!
+        address: String!
+        type: String!
+        attendees: [User!]
+        thumbnail: String
+        latitude: Float
+        longitude: Float
     }
 
     type Query {
-        userList: [User!]!
-        eventList: [Event!]!
+        event: [Event!]
+        eventList: [Event!]
+        getCreatedEvents: [Event!]
+        user: User!
         myUser: User
-        getCreatedEvents: [Event!]!
-        getCities(nameLike: String): [City!]!
+        userList: [User!]
+        getCities(
+            nameLike: String
+        ): [City!]!
     }
 
     type Mutation {
@@ -46,17 +50,13 @@ export const typeDefs = gql`
             description: String!
             date: String!
             time: String!
-            cityId: Int
+            cityId: Int!
             address: String
             latitude: Float
             longitude: Float
             categoryId: Int
             imageUrl: String
-            city: String
-            state: String
-            country: String
         ): Event!
-
-        deleteEvent(eventId: ID!): Boolean!
+        deleteEvent(id: ID!): Boolean!
     }
 `;

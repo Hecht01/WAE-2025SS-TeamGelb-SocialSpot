@@ -1,46 +1,35 @@
-<script>
+<script lang="ts">
     import EventFeed from '$lib/components/EventFeed.svelte';
     import { onMount } from 'svelte';
+    import type {EventData} from "$lib/types.js";
 
-    // dummy event list - only Pride, Ren-Fair and Animal Shelter
-    let events = [
-        {
-            id: 3,
-            image: '/examplePride.jpg',
-            title: 'Pride March 2025',
-            place: 'Amberg - City Center',
-            description: "Join the celebration at this year's Pride March! Dance, cheer, and show your colors as we come together for love, equality, and fun. All are welcome—let's make this a day to remember!",
-        startDate: '02.08.2025',
-        endDate: '02.08.2025',
-        startTime: '12:00',
-        likes: 13,
-        comments: 7,
-        },
-        {
-            id: 4,
-            image: '/exampleRenFair.jpg',
-            title: 'Renaissance Fair',
-            place: 'Amberg - Old Castle',
-            description: "Join us for this year's Pride March in Amberg! We'll kick off at city center, march through the vibrant streets, and finish with a celebration at the park. Bring your friends, your flags, and your best energy for a colorful journey of love and pride!",
-        startDate: '31.08.2025',
-        endDate: '02.09.2025',
-        startTime: '11:00',
-        likes: 42,
-        comments: 5,
-    },
-    {
-        id: 5,
-            image: '/exampleShelter.jpg',
-        title: 'Animal Shelter Festival',
-        place: 'Amberg - Animal Shelter Purrfection',
-        description: "You can meet all the cute animals, and if that's not enough, there's also delicious food and awesome entertainment for everyone. Come join the fun and support our furry friends!",
-        startDate: '03.09.2025',
-        endDate: '03.09.2025',
-        startTime: '09:00',
-        likes: 56,
-        comments: 21,
-    },
-    ]
+    const GRAPHQL_URL = `${import.meta.env.VITE_API_URL || 'http://localhost:4000'}/graphql`;
+    let createdEvents = [];
+    let loadingEvents = null;
+    let errorEvents = null;
+
+    const query = `
+    query {
+      getCreatedEvents {
+        id
+        title
+        description
+        date
+        time
+        location
+        type
+        latitude
+        longitude
+        thumbnail
+        author {
+          name
+          email
+          profilePicture
+        }
+      }
+    }
+  `;
+
 
     let user = null;
     let loading = true;
@@ -51,6 +40,7 @@
 
     onMount(async () => {
         await checkAuthStatus();
+
     });
 
     async function checkAuthStatus() {
@@ -85,6 +75,25 @@
                     avatarUrl: result.data.myUser.profilePicture || "/dummyUser.jpg",
                     user_uri: result.data.myUser.user_uri
                 };
+
+                try {
+                    console.log('Fetching Created Events')
+                    const res = await fetch(GRAPHQL_URL, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ query }),
+                        credentials: 'include'
+                    });
+                    const json = await res.json();
+                    createdEvents = json.data.getCreatedEvents;
+                } catch (err) {
+                    console.log('Error when fetching created Events')
+                    errorEvents = err.message;
+                } finally {
+                    loadingEvents = false;
+                }
             } else {
                 user = null;
             }
@@ -166,17 +175,30 @@
 
         <div class="sosp-profile-card">
             <h2 class="sosp-profile-header">Your Created Events</h2>
+
             <div class="sosp-profile-card-content">
-                <EventFeed {events}/>
+
+                {#if loadingEvents}
+                    <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-[#541a46]"></div>
+                    <h2 class="event-header">
+                        Loading...
+                    </h2>
+                {:else if errorEvents}
+                    <p>Error while Loading: {errorEvents}</p>
+                {:else}
+                    <EventFeed bind:events={createdEvents} />
+                {/if}
             </div>
         </div>
 
+
+        <!--
         <div class="sosp-profile-card">
             <h2 class="sosp-profile-header">Joined Events</h2>
             <div class="sosp-profile-card-content">
                 <EventFeed {events}/>
             </div>
-        </div>
+        </div>-->
     </div>
 
 {:else}

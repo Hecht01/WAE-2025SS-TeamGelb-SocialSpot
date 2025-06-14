@@ -179,7 +179,7 @@
     grid-template-columns: 1fr;
     gap: 0.5rem;
     padding: 1rem;
-    max-width: 72rem;
+    width: 68rem;
     height: 28rem;
     margin: 0 auto;
     border-radius: 1rem;
