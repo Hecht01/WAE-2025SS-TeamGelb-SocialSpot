@@ -1,0 +1,7 @@
+export class GraphQLClient {
+  request(query: string, variables?: any) {
+    return Promise.resolve({
+      eventList: [{ id: '1', title: 'Mocked Event', location: 'Berlin', latitude: 52.52, longitude: 13.405 }]
+    });
+  }
+}

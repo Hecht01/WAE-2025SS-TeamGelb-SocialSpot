@@ -28,15 +28,17 @@ COPY package*.json .
 
 RUN npm install
 
-# Run the application as a non-root user.
-USER node
-
 # Copy the rest of the source files into the image.
 COPY . .
+
+# Create the uploads directory and set permissions
+RUN mkdir -p uploads && chown -R node:node uploads
+
+# Run the application as a non-root user.
+USER node
 
 # Expose the port that the application listens on.
 EXPOSE 4000
 
 # Run the application.
 CMD ["node", "src/index.js"]
-CMD ["node", "src/auth-server.js"]

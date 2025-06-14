@@ -19,12 +19,17 @@ services:
     build: ./app/backend
     env_file:
       - .env
+    volumes:
+      - uploads-volume:/app/uploads
     depends_on:
       postgres:
         condition: service_healthy
   webapp:
     restart: unless-stopped
-    build: ./app/frontend/SocialSpot
+    build:
+      context: ./app/frontend/SocialSpot
+      args:
+        - VITE_API_URL=${VITE_API_URL}
     env_file:
       - .env
   nginx:
@@ -34,10 +39,11 @@ services:
       - "80:80"
       - "443:443"
     volumes:
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./nginx/${NGINX_CONF}:/etc/nginx/nginx.conf
       - ./nginx/certs:/etc/nginx/certs:ro
     depends_on:
       - webapp
       - webserver
 volumes:
   pgdata:
+  uploads-volume:

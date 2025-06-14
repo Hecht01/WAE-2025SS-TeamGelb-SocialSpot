@@ -1,55 +1,293 @@
-const { ApolloServer } = require("@apollo/server");
-const { startStandaloneServer } = require("@apollo/server/standalone");
-const typeDefs = require("./schema");
+import express from 'express';
+import session from 'express-session';
+import multer from 'multer';
+import path from 'path';
+import cookieParser from 'cookie-parser';
+import * as openid from 'openid-client';
+import { ApolloServer } from "apollo-server-express";
+import { addMocksToSchema } from "@graphql-tools/mock";
+import { makeExecutableSchema } from "@graphql-tools/schema";
+import cors from 'cors';
+import {pool, upsertUserGoogle} from './database.js';
+import { fileURLToPath } from 'url';
+import {uuidv4} from "@graphql-tools/mock/utils";
+import * as fs from "node:fs";
 
-const { addMocksToSchema } = require("@graphql-tools/mock");
-const { makeExecutableSchema } = require("@graphql-tools/schema");
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
-const mocks = {
-    Query: () => ({
-        allEvents: () => [...new Array(1)],
-    }),
-    Event: () => ({
-        id: () => "event_01",
-        title: () => "Party im Bundestag",
-        author: () => {
-            return {
-                id: "User_01",
-                name: "Olaf Scholz",
-                email:"olaf.scholz@gmail.com"
-            };
-        },
-        description: () => "Party im Bundestag, Olaf geht ab",
-        date:  () => "10.05.2025",
-        time:  () => "20:30",
-        location: () => "Berlin",
-        address: () => "Platz der Republik 1, 11011 Berlin",
-        type: () => "Party",
-        thumbnail: () => "https://www.bundestag.de/resource/image/218498/16x9/1460/822/e0c4580af18d49e18c422437b47d7d14/FB55CF5ACCABD2CCF08FB2B61D466259/westportal01.jpg",
-        latitude: () => 52.520008,
-        longitude: () => 13.404954,
-
-    }),
-    User: () => ({
-        id: () => "user_01",
-        name: () => "Olaf Scholz",
-        email: () => "olaf.scholz@gmail.com"
-    })
-};
-
-
-async function startApolloServer() {
-    const server = new ApolloServer({
-        schema: addMocksToSchema({
-            schema: makeExecutableSchema({ typeDefs }),
-            mocks,
-        }),
+if (process.env.NODE_ENV !== 'production') {
+    console.log('dev environment')
+    await import('dotenv').then(dotenv => {
+        dotenv.config({path: '../../.env'});
     });
-    const { url } = await startStandaloneServer(server);
-    console.log(`
-    🚀  Server is running!
-    📭  Query at ${url}
-  `);
 }
 
-startApolloServer();
+import { typeDefs } from "./schema.js";
+import { resolvers } from "./resolvers.js";
+import axios from "express-session/session/memory.js";
+
+const app = express();
+const port = process.env.BACKEND_PORT || 4000;
+
+const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        cb(null, 'uploads/')
+    },
+    filename: function (req, file, cb) {
+        // Generate UUID and preserve file extension
+        const uuid = uuidv4();
+        const extension = path.extname(file.originalname);
+        cb(null, uuid + extension);
+    }
+});
+const upload = multer({ storage: storage });
+
+const corsOptions = {
+    origin: [
+        process.env.FRONTEND_URL || 'http://localhost:3000',
+        'https://studio.apollographql.com'
+    ],
+    credentials: true,
+    optionsSuccessStatus: 200, // some legacy browsers (IE11, various SmartTVs) choke on 204
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Cookie'],
+    exposedHeaders: ['Set-Cookie']
+};
+
+app.options('*', cors(corsOptions));
+
+app.use(cors(corsOptions));
+app.use(cookieParser());
+app.use('/api', express.json());
+app.use('/api', express.urlencoded({ extended: true }));
+
+let sessionMiddleware;
+
+if (process.env.NODE_ENV === 'production'){
+    //nginx forwards per http and express expects SSL
+    app.enable('trust proxy');
+
+    sessionMiddleware = session({
+        secret: process.env.secret || 'Super Secure Secret',
+        proxy: true,
+        resave: false,
+        saveUninitialized: false,
+        name: 'session.sid',
+        cookie: {
+            secure: true,
+            httpOnly: true,
+            maxAge: 1000 * 60 * 60 * 24 * 7,
+            sameSite: 'none',
+        }
+    });
+} else {
+    sessionMiddleware = session({
+        secret: process.env.secret || 'Super Secure Secret',
+        resave: false,
+        saveUninitialized: false,
+        name: 'session.sid',
+        cookie: {
+            secure: false,
+            httpOnly: true,
+            maxAge: 1000 * 60 * 60 * 24 * 7,
+            sameSite: 'lax',
+        }
+    });
+}
+
+app.use(sessionMiddleware);
+
+// OAuth configuration
+let redirectUri = process.env.REDIRECT_URI;
+let scope = 'openid email profile';
+
+let config = await openid.discovery(
+    new URL('https://accounts.google.com'),
+    process.env.GOOGLE_CLIENT_ID,
+    process.env.GOOGLE_CLIENT_SECRET,
+);
+
+try {
+    const server = new ApolloServer({
+        schema: addMocksToSchema({
+            schema: makeExecutableSchema({ typeDefs, resolvers }),
+            resolvers,
+        }),
+        context: ({ req, res }) => {
+            return {
+                req,
+                res
+            };
+        },
+        cors: {
+            origin: corsOptions.origin,
+            credentials: true
+        }
+    });
+
+    await server.start();
+
+    server.applyMiddleware({
+        app,
+        path: '/graphql',
+        cors: false
+    });
+
+} catch (error) {
+    console.error('Schema error:', error);
+}
+
+app.get('/api', (req, res) => {
+    console.log(req.session.id);
+    if (req.session.user) {
+        res.send(`
+      <h1>Welcome ${req.session.user.username}</h1>
+      <img src="${req.session.user.profile_picture_url}" alt="Profile Picture" style="width:100px;border-radius:50%;">
+      <p>Email: ${req.session.user.email}</p>
+      <p><a href="/graphql">GraphQL Playground</a></p>
+      <a href="/api/logout">Logout</a>
+    `);
+    } else {
+        res.send(`
+      <h1>Welcome to OAuth Demo</h1>
+      <a href="/api/auth-google">Login with Google</a>
+    `);
+    }
+});
+
+app.get('/api/auth-google', async (req, res) => {
+    const codeVerifier = openid.randomPKCECodeVerifier()
+    const codeChallenge = await openid.calculatePKCECodeChallenge(codeVerifier)
+
+    let state;
+    let parameters = {
+        redirect_uri: redirectUri,
+        scope: scope,
+        codeChallenge: codeChallenge,
+        code_challenge_method: 'S256',
+    }
+
+    if (!config.serverMetadata().supportsPKCE()) {
+        state = openid.randomState()
+        parameters.state = state
+    }
+    req.session.codeVerifier = codeVerifier;
+    req.session.expectedState = state;
+
+    let redirectTo = openid.buildAuthorizationUrl(config, parameters)
+    console.log('redirecting to', redirectTo.href)
+    res.redirect(redirectTo.href);
+});
+
+app.get('/api/auth/callback', async (req, res) => {
+    try {
+        console.log(`try: ${process.env.BACKEND_URL}${req.url}`)
+        let tokens = await openid.authorizationCodeGrant(
+            config,
+            new URL(`${process.env.BACKEND_URL}${req.url}`),
+            {
+                expectedState: req.session.expectedState,
+            },
+        )
+        console.log('Token Endpoint Response', tokens)
+
+        req.session.tokens = {
+            access_token: tokens.access_token,
+            expires_in: tokens.expires_in
+        };
+
+        if(tokens.scope.includes('https://www.googleapis.com/auth/userinfo')){
+            const response = await fetch('https://www.googleapis.com/oauth2/v1/userinfo?alt=json', {
+                headers: {
+                    Authorization: `Bearer ${tokens.access_token}`,
+                },
+            });
+            if (!response.ok) {
+                throw new Error(`Failed to fetch user info: ${response.statusText}`);
+            }
+            const data = await response.json();
+
+            console.log('data', data);
+            const userData = await upsertUserGoogle(data);
+
+            //TODO: handle new user..?
+            if(userData.success) {
+                req.session.user = userData.user;
+                console.log('success', req.session);
+                req.session.save();
+            }
+        }
+        const frontendUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/userPage`;
+        res.redirect(frontendUrl);
+    } catch (err) {
+        console.error('Authentication error:', err);
+        res.status(500).send('Authentication failed');
+    }
+});
+
+app.get('/api/logout', (req, res) => {
+    req.session.destroy(err => {
+        if (err) {
+            console.error('Error destroying session:', err);
+        }
+        return res.send(200);
+
+    });
+});
+
+const requireAuth = (req, res, next) => {
+    if (!req.session.user) {
+        return res.status(401).json({ error: 'Not authenticated' });
+    }
+    next();
+};
+
+app.get('/api/profile', requireAuth, (req, res) => {
+    res.json(req.session.user);
+});
+
+app.post('/api/upload', requireAuth, upload.single('image'), async (req, res) => {
+    try {
+        const query = `
+            INSERT INTO uploaded_images (user_id, image_url)
+            VALUES ($1, $2)
+        `;
+
+        const result = await pool.query(query, [
+            req.session.user.user_id,
+            req.file.filename
+        ]);
+
+        console.log("File uploaded:", req.file);
+        res.json({
+            message: "Upload successful",
+            filename: req.file.filename
+        });
+
+    } catch (error) {
+        console.error('Database error:', error);
+
+        fs.unlink(req.file.path, (err) => {
+            if (err) console.error('Error deleting file:', err);
+        });
+
+        res.status(500).json({
+            error: 'Failed to save image information to database'
+        });
+    }
+})
+
+
+const staticFilesPath = path.join(__dirname, '..', 'uploads');
+
+console.log(`[Express Static] Attempting to serve from: ${staticFilesPath}`);
+console.log(`[Express Static] Does this path exist? Check container filesystem.`); // Manual check needed
+
+app.use('/api/images', express.static(staticFilesPath));
+
+app.listen(port, () => {
+    console.log(`Server running on ${process.env.BACKEND_URL}/api`);
+    console.log(`GraphQL endpoint: ${process.env.BACKEND_URL}/graphql`);
+})
+
