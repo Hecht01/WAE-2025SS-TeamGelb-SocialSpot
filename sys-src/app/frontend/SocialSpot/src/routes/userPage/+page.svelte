@@ -177,7 +177,6 @@
             <h2 class="sosp-profile-header">Your Created Events</h2>
 
             <div class="sosp-profile-card-content">
-
                 {#if loadingEvents}
                     <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-[#541a46]"></div>
                     <h2 class="event-header">

@@ -48,7 +48,7 @@
             thumbnail: '/exampleRenFair.jpg',
             title: 'Renaissance Fair',
             place: 'Amberg - Old Castle',
-            description: 'Join us for this year’s Pride March in Amberg! We’ll kick off at city center, march through the vibrant streets, and finish with a celebration at the park. Bring your friends, your flags, and your best energy for a colorful journey of love and pride!',
+            description: 'Step into Ye Olde Ren Faire, where dragon-slaying contests, turkey leg duels, and lute-powered dance battles await! Beware the pickpocketing goblins and overly dramatic bards.',
             startDate: '31.08.2025',
             endDate: '02.09.2025',
             startTime: '11:00',
@@ -130,7 +130,17 @@
 </script>
 
 {#if loading}
-    <p>Loading Events...</p>
+    <div class="sosp-fullscreen-center">
+        <div class="event-box">
+            <div class="sosp-center-content">
+                <!-- little loading wheel animation -->
+                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-[#541a46]"></div>
+                <h2 class="event-header">
+                    Loading...
+                </h2>
+            </div>
+        </div>
+    </div>
 {:else if error}
     <p>Error while Loading: {error}</p>
 {:else}
