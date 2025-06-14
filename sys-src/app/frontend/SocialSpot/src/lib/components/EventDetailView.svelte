@@ -2,16 +2,8 @@
     import {eventPickedForDetailView, isOverlayOpen} from "../../stores/OverlayStore";
     import {Heart, MessageCircle} from "lucide-svelte";
 
-    export let event: any;
     const IMAGE_URL = `${import.meta.env.VITE_API_URL || 'http://localhost:4000'}/api/images/`;
 
-
-  function close() {
-    dispatch('close');
-  }
-
-  import { createEventDispatcher } from 'svelte';
-  const dispatch = createEventDispatcher();
 </script>
 
 {#if $eventPickedForDetailView}
@@ -44,11 +36,6 @@
             }}
         >
 
-            <script lang="ts">
-
-                console.log('EventDetailView:', event); // Überprüfe, ob das `thumbnail`-Feld vorhanden ist
-            </script>
-
             <div class="relative">
                 <!-- x button in top right corner -->
                 <button
@@ -74,7 +61,7 @@
 
             <div class="event-infos">
                 <h2 class="event-header">{$eventPickedForDetailView.title}</h2>
-                <p class="event-p"><strong>Date:</strong> {$eventPickedForDetailView.date}; Time: {$eventPickedForDetailView.time}</p>
+                <p class="event-p"><strong>Date:</strong> {new Date(parseInt($eventPickedForDetailView.date) ).toLocaleDateString()}; Time: {$eventPickedForDetailView.time.substring(0,5)}</p>
                 <p class="event-p"><strong>Place:</strong> {$eventPickedForDetailView.address}</p>
                 <p class="event-p"><strong>Description:</strong> {$eventPickedForDetailView.description}</p>
                 <button class="sosp-button-secondary">Join</button>

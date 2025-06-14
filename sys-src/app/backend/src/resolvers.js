@@ -1,59 +1,13 @@
-import axios from 'axios';
-
-// Geocoding helper function
-const geocodeAddress = async (address, city, state, country) => {
-    try {
-        // Build query string with optional parameters
-        let query = address || '';
-        if (city) query += query ? `, ${city}` : city;
-        if (state) query += `, ${state}`;
-        if (country) query += `, ${country}`;
-
-        if (!query.trim()) {
-            throw new Error('No address information provided for geocoding');
-        }
-
-        const nominatimUrl = 'https://nominatim.openstreetmap.org/search';
-        const response = await axios.get(nominatimUrl, {
-            params: {
-                q: query,
-                format: 'json',
-                limit: 1,
-                addressdetails: 1
-            },
-            headers: {
-                'User-Agent': 'SocialSpot/1.0'
-            }
-        });
-
-        if (!response.data || response.data.length === 0) {
-            throw new Error(`Address not found: ${query}`);
-        }
-
-        const result = response.data[0];
-        return {
-            latitude: parseFloat(result.lat),
-            longitude: parseFloat(result.lon),
-            display_name: result.display_name
-        };
-    } catch (error) {
-        console.error('Geocoding error:', error.message);
-        throw new Error(`Geocoding failed: ${error.message}`);
-    }
-};
+import {pool} from './database.js';
+import {AuthenticationError} from "apollo-server-express";
 
 export const resolvers = {
     Query: {
-        userList: async (parent, args, context) => {
-            const result = await context.pool.query('SELECT * FROM app_user');
-            return result.rows;
-        },
-
-        eventList: async (_, __, context) => {
-            const res = await context.pool.query(`
-                SELECT e.*, u.username, u.email, u.profile_picture_url
+        eventList: async () => {
+            const res = await pool.query(`
+                SELECT e.*, u.user_uri, u.username, u.email, u.profile_picture_url
                 FROM event e
-                         JOIN app_user u ON e.creator_id = u.user_id
+                JOIN app_user u ON e.creator_id = u.user_id
             `);
             return res.rows.map(row => ({
                 id: row.event_id,
@@ -63,7 +17,7 @@ export const resolvers = {
                 time: row.event_time,
                 location: "TODO Ort",
                 address: row.address,
-                type: "Generic",
+                type: "Generic", // You can join the category table for name
                 latitude: row.latitude,
                 longitude: row.longitude,
                 thumbnail: row.image_url,
@@ -73,7 +27,17 @@ export const resolvers = {
                     email: row.email,
                     profilePicture: row.profile_picture_url,
                 },
-                attendees: []
+                attendees: [] // Can be extended later
+            }));
+        },
+
+        userList: async () => {
+            const res = await pool.query(`SELECT * FROM app_user`);
+            return res.rows.map(user => ({
+                id: user.user_id,
+                name: user.username,
+                email: user.email,
+                profilePicture: user.profile_picture_url
             }));
         },
 
@@ -118,7 +82,7 @@ export const resolvers = {
             `;
             const values = [ user.user_id ];
 
-            const result = await context.pool.query(query, values);
+            const result = await pool.query(query, values);
 
             return result.rows.map(row => ({
                 id: row.event_id,
@@ -142,7 +106,7 @@ export const resolvers = {
             }));
         },
 
-        getCities: async (_, args, context) => {
+        getCities: async (_, args) => {
             const { nameLike } = args;
             const query = `
                 SELECT min(city_id) as city_id,
@@ -156,7 +120,7 @@ export const resolvers = {
                  
             `;
             const values = [ (nameLike || '' ) + "%" ];
-            const result = await context.pool.query(query, values);
+            const result = await pool.query(query, values);
 
             return result.rows.map(row => ({
                 id: row.city_id,
@@ -172,7 +136,7 @@ export const resolvers = {
             const {
                 title, description, date, time,
                 cityId, address, latitude, longitude,
-                categoryId, imageUrl, city, state, country
+                categoryId, imageUrl
             } = args;
 
             const { req } = context;
@@ -190,40 +154,8 @@ export const resolvers = {
                      WHERE image_url = $1
                        AND user_id = $2
                 `;
-                const checkResult = await context.pool.query(checkQuery, [imageUrl, user.user_id]);
+                const checkResult = await pool.query(checkQuery, [imageUrl, user.user_id]);
                 console.log(checkResult);
-            }
-
-            let finalLatitude = latitude;
-            let finalLongitude = longitude;
-
-            // If coordinates are not provided, try to geocode the address
-            if (!latitude || !longitude) {
-                try {
-                    // First try to get city info from database if cityId is provided
-                    let cityName = city;
-                    let stateName = state;
-
-                    if (!cityName && cityId) {
-                        const cityQuery = `SELECT name, district, state FROM city WHERE city_id = $1`;
-                        const cityResult = await context.pool.query(cityQuery, [cityId]);
-                        if (cityResult.rows.length > 0) {
-                            cityName = cityResult.rows[0].name;
-                            stateName = cityResult.rows[0].state || cityResult.rows[0].district;
-                        }
-                    }
-
-                    const geocodeResult = await geocodeAddress(address, cityName, stateName, country);
-                    finalLatitude = geocodeResult.latitude;
-                    finalLongitude = geocodeResult.longitude;
-
-                    console.log(`Geocoded address: ${address}, ${cityName} -> ${finalLatitude}, ${finalLongitude}`);
-                } catch (geocodeError) {
-                    console.warn('Geocoding failed:', geocodeError.message);
-                    // Continue without coordinates if geocoding fails
-                    finalLatitude = null;
-                    finalLongitude = null;
-                }
             }
 
             const insertQuery = `
@@ -231,17 +163,19 @@ export const resolvers = {
                     title, description, event_date, event_time,
                     city_id, address, latitude, longitude,
                     creator_id, category_id, image_url
-                ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
-                    RETURNING *
+                )
+                VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
+                RETURNING *
             `;
+
 
             const values = [
                 title, description, date, time,
-                cityId, address, finalLatitude, finalLongitude,
+                cityId, address, latitude, longitude,
                 user.user_id, categoryId, imageUrl
             ];
 
-            const result = await context.pool.query(insertQuery, values);
+            const result = await pool.query(insertQuery, values);
             const event = result.rows[0];
 
             return {
@@ -250,7 +184,7 @@ export const resolvers = {
                 description: event.description,
                 date: event.event_date,
                 time: event.event_time,
-                location: event.city_id ? event.city_id.toString() : "Unknown",
+                location: 4207, //event.city_id.toString(),
                 address: event.address,
                 type: "Generic",
                 latitude: event.latitude,
@@ -283,7 +217,7 @@ export const resolvers = {
                 )
                 SELECT COUNT(*) FROM deleted_rows;
             `;
-            const result = await context.pool.query(deleteQuery, [eventId, user.user_id]);
+            const result = await pool.query(deleteQuery, [req, user.user_id]);
 
             const deletedCount = parseInt(result.rows[0].count);
 

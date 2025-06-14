@@ -2,6 +2,8 @@
     import EventFeed from '$lib/components/EventFeed.svelte';
     import { onMount } from 'svelte';
 
+    const GRAPHQL_URL = `${import.meta.env.VITE_API_URL || 'http://localhost:4000'}/graphql`;
+
     // dummy event list - all events
     /*
     let events = [
@@ -91,7 +93,6 @@
         description
         date
         time
-        address
         location
         type
         latitude
@@ -108,7 +109,7 @@
 
     onMount(async () => {
         try {
-            const res = await fetch('http://localhost:4000/graphql', {
+            const res = await fetch(GRAPHQL_URL, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -118,6 +119,7 @@
 
             const json = await res.json();
             events = json.data.eventList;
+            console.log(events)
         } catch (err) {
             error = err.message;
         } finally {
