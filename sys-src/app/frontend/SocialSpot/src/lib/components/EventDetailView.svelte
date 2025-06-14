@@ -57,9 +57,9 @@
                         isOverlayOpen.set(false);
                         eventPickedForDetailView.set(null);
                         }}>&times</button>
-
-
-                    <img src={`${IMAGE_URL}${$eventPickedForDetailView.thumbnail}`} alt="{$eventPickedForDetailView.title}" class="event-image-large" />                <div class="event-image-overlay">
+                <img src={`${IMAGE_URL}${$eventPickedForDetailView.thumbnail}`} alt="{$eventPickedForDetailView.title}" class="event-image-large" />
+                <!--
+                <div class="event-image-overlay">
                     <div class="event-image-overlay-item">
                         <Heart class="w-5 h-5 text-white" />
                         <span>{$eventPickedForDetailView.likes}</span>
@@ -69,12 +69,13 @@
                         <span>{$eventPickedForDetailView.comments}</span>
                     </div>
                 </div>
+                -->
             </div>
 
             <div class="event-infos">
                 <h2 class="event-header">{$eventPickedForDetailView.title}</h2>
-                <p class="event-p"><strong>Date:</strong> {$eventPickedForDetailView.startDate} - {$eventPickedForDetailView.endDate}; Time: {$eventPickedForDetailView.startTime}</p>
-                <p class="event-p"><strong>Place:</strong> {$eventPickedForDetailView.place}</p>
+                <p class="event-p"><strong>Date:</strong> {$eventPickedForDetailView.date}; Time: {$eventPickedForDetailView.time}</p>
+                <p class="event-p"><strong>Place:</strong> {$eventPickedForDetailView.address}</p>
                 <p class="event-p"><strong>Description:</strong> {$eventPickedForDetailView.description}</p>
                 <button class="sosp-button-secondary">Join</button>
             </div>
