@@ -1,4 +1,15 @@
 import axios from 'axios';
+import {AuthenticationError} from "apollo-server-express";
+import session from "express-session";
+const { Pool } = require("pg");
+
+const pool = new Pool({
+    user: process.env.DB_USER,
+    host: process.env.DB_HOST,
+    database: process.env.DB_NAME,
+    password: process.env.DB_PASSWORD,
+    port: process.env.DB_PORT,
+});
 
 // Geocoding helper function
 const geocodeAddress = async (address, city, state, country) => {
@@ -44,13 +55,13 @@ const geocodeAddress = async (address, city, state, country) => {
 
 export const resolvers = {
     Query: {
-        userList: async (parent, args, context) => {
-            const result = await context.pool.query('SELECT * FROM app_user');
+        userList: async (parent, args) => {
+            const result = await pool.query('SELECT * FROM app_user');
             return result.rows;
         },
 
-        eventList: async (_, __, context) => {
-            const res = await context.pool.query(`
+        eventList: async () => {
+            const res = await pool.query(`
                 SELECT e.*, u.username, u.email, u.profile_picture_url
                 FROM event e
                          JOIN app_user u ON e.creator_id = u.user_id
@@ -78,13 +89,13 @@ export const resolvers = {
         },
 
         myUser: async (_, args, context) => {
-            const { req } = context;
 
-            if (!req.session || !req.session.user) {
+
+            if (!session || !session.user) {
                 throw new AuthenticationError('Authentication required. Please log in.');
             }
 
-            const user = req.session.user;
+            const user = session.user;
 
             return {
                 user_uri: user.user_uri,
@@ -94,17 +105,16 @@ export const resolvers = {
             };
         },
 
-        getCreatedEvents: async (_, args, context) => {
-            const { req } = context;
+        getCreatedEvents: async (_, args) => {
 
-            console.log("graphql " + req.session.id)
-            console.log(req.session.user);
+            console.log("graphql " + session.id)
+            console.log(session.user);
 
-            if (!req.session || !req.session.user) {
+            if (!session || !session.user) {
                 throw new AuthenticationError('Authentication required. Please log in.');
             }
 
-            const user = req.session.user;
+            const user = session.user;
 
             const query = `
                 SELECT e.*, 
@@ -118,7 +128,7 @@ export const resolvers = {
             `;
             const values = [ user.user_id ];
 
-            const result = await context.pool.query(query, values);
+            const result = await pool.query(query, values);
 
             return result.rows.map(row => ({
                 id: row.event_id,
@@ -142,7 +152,7 @@ export const resolvers = {
             }));
         },
 
-        getCities: async (_, args, context) => {
+        getCities: async (_, args) => {
             const { nameLike } = args;
             const query = `
                 SELECT min(city_id) as city_id,
@@ -156,7 +166,7 @@ export const resolvers = {
                  
             `;
             const values = [ (nameLike || '' ) + "%" ];
-            const result = await context.pool.query(query, values);
+            const result = await pool.query(query, values);
 
             return result.rows.map(row => ({
                 id: row.city_id,
@@ -168,20 +178,19 @@ export const resolvers = {
     },
 
     Mutation: {
-        createEvent: async (_, args, context) => {
+        createEvent: async (_, args) => {
             const {
                 title, description, date, time,
                 cityId, address, latitude, longitude,
                 categoryId, imageUrl, city, state, country
             } = args;
 
-            const { req } = context;
 
-            if (!req.session || !req.session.user) {
+            if (session || session.user) {
                 throw new AuthenticationError('Authentication required. Please log in.');
             }
 
-            const user = req.session.user;
+            const user = session.user;
 
             if(imageUrl) {
                 const checkQuery = `
@@ -190,7 +199,7 @@ export const resolvers = {
                      WHERE image_url = $1
                        AND user_id = $2
                 `;
-                const checkResult = await context.pool.query(checkQuery, [imageUrl, user.user_id]);
+                const checkResult = await pool.query(checkQuery, [imageUrl, user.user_id]);
                 console.log(checkResult);
             }
 
@@ -206,7 +215,7 @@ export const resolvers = {
 
                     if (!cityName && cityId) {
                         const cityQuery = `SELECT name, district, state FROM city WHERE city_id = $1`;
-                        const cityResult = await context.pool.query(cityQuery, [cityId]);
+                        const cityResult = await pool.query(cityQuery, [cityId]);
                         if (cityResult.rows.length > 0) {
                             cityName = cityResult.rows[0].name;
                             stateName = cityResult.rows[0].state || cityResult.rows[0].district;
@@ -241,7 +250,7 @@ export const resolvers = {
                 user.user_id, categoryId, imageUrl
             ];
 
-            const result = await context.pool.query(insertQuery, values);
+            const result = await pool.query(insertQuery, values);
             const event = result.rows[0];
 
             return {
@@ -266,14 +275,13 @@ export const resolvers = {
             };
         },
 
-        deleteEvent : async (_, args, context) => {
+        deleteEvent : async (_, args) => {
             const { eventId } = args;
-            const { req } = context;
 
-            if (!req.session || !req.session.user) {
+            if (session || session.user) {
                 throw new AuthenticationError('Authentication required. Please log in.');
             }
-            const user = req.session.user;
+            const user = session.user;
 
             const deleteQuery = `
                 WITH deleted_rows AS (
@@ -283,7 +291,7 @@ export const resolvers = {
                 )
                 SELECT COUNT(*) FROM deleted_rows;
             `;
-            const result = await context.pool.query(deleteQuery, [eventId, user.user_id]);
+            const result = await pool.query(deleteQuery, [eventId, user.user_id]);
 
             const deletedCount = parseInt(result.rows[0].count);
 
