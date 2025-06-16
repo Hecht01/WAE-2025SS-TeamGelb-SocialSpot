@@ -1,34 +1,17 @@
-import {pool} from './database.js';
+import {pool, getEvents} from './database.js';
 import {AuthenticationError} from "apollo-server-express";
 
 export const resolvers = {
     Query: {
-        eventList: async () => {
-            const res = await pool.query(`
-                SELECT e.*, u.user_uri, u.username, u.email, u.profile_picture_url
-                FROM event e
-                JOIN app_user u ON e.creator_id = u.user_id
-            `);
-            return res.rows.map(row => ({
-                id: row.event_id,
-                title: row.title,
-                description: row.description,
-                date: row.event_date,
-                time: row.event_time,
-                location: "TODO Ort",
-                address: row.address,
-                type: "Generic", // You can join the category table for name
-                latitude: row.latitude,
-                longitude: row.longitude,
-                thumbnail: row.image_url,
-                author: {
-                    user_uri: row.user_uri,
-                    name: row.username,
-                    email: row.email,
-                    profilePicture: row.profile_picture_url,
-                },
-                attendees: [] // Can be extended later
-            }));
+        eventList: async (_, args, context) => {
+            const { req } = context;
+
+            let userId = -1; // Default to -1 for unauthenticated users
+            if (!req.session || !req.session.user) {
+                userId = req.session.user.user_id;
+            }
+
+            return getEvents(userId, true);
         },
 
         userList: async () => {
@@ -60,50 +43,12 @@ export const resolvers = {
 
         getCreatedEvents: async (_, args, context) => {
             const { req } = context;
-
-            console.log("graphql " + req.session.id)
-            console.log(req.session.user);
-
+            let userId = -1; // Default to -1 for unauthenticated users
             if (!req.session || !req.session.user) {
-                throw new AuthenticationError('Authentication required. Please log in.');
+                userId = req.session.user.user_id;
             }
 
-            const user = req.session.user;
-
-            const query = `
-                SELECT e.*, 
-                       u.user_uri,
-                       u.username, 
-                       u.email, 
-                       u.profile_picture_url
-                  FROM event e
-                  JOIN app_user u ON e.creator_id = u.user_id
-                 WHERE e.creator_id = $1
-            `;
-            const values = [ user.user_id ];
-
-            const result = await pool.query(query, values);
-
-            return result.rows.map(row => ({
-                id: row.event_id,
-                title: row.title,
-                description: row.description,
-                date: row.event_date,
-                time: row.event_time,
-                location: "TODO Ort",
-                address: row.address,
-                type: "Generic", // You can join the category table for name
-                latitude: row.latitude,
-                longitude: row.longitude,
-                thumbnail: row.image_url,
-                author: {
-                    user_uri: row.user_uri,
-                    name: row.username,
-                    email: row.email,
-                    profilePicture: row.profile_picture_url,
-                },
-                attendees: [] // Can be extended later
-            }));
+            return getEvents(userId, false);
         },
 
         getCities: async (_, args) => {

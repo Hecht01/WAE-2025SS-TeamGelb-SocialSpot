@@ -26,10 +26,15 @@ export const typeDefs = gql`
         location: String!
         address: String!
         type: String!
-        attendees: [User!]
         thumbnail: String
         latitude: Float
-        longitude: Float
+        longitude: Float,
+        likeCount: Int!
+        likedByMe: Boolean!
+        attendCount: Int!
+        attendedByMe: Boolean!
+        commentCount: Int!
+        attendees: [User!]
     }
 
     type Query {
