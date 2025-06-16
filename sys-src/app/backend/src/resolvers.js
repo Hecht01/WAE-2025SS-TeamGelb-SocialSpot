@@ -7,7 +7,7 @@ export const resolvers = {
             const { req } = context;
 
             let userId = -1; // Default to -1 for unauthenticated users
-            if (!req.session || !req.session.user) {
+            if (req.session && req.session.user) {
                 userId = req.session.user.user_id;
             }
 
@@ -45,8 +45,9 @@ export const resolvers = {
             const { req } = context;
             let userId = -1; // Default to -1 for unauthenticated users
             if (!req.session || !req.session.user) {
-                userId = req.session.user.user_id;
+                throw new AuthenticationError('Authentication required. Please log in.');
             }
+            userId = req.session.user.user_id;
 
             return getEvents(userId, false);
         },
