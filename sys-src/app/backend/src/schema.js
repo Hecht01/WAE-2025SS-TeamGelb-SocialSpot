@@ -24,7 +24,7 @@ export const typeDefs = gql`
         date: String!
         time: String!
         location: String!
-        address: String!
+        address: String
         type: String!
         thumbnail: String
         latitude: Float
