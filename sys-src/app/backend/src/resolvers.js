@@ -224,5 +224,102 @@ export const resolvers = {
             return deletedCount > 0;
         },
 
+        attendEvent: async (_, args, context) => {
+            const { eventId } = args;
+            const { req } = context;
+
+            if (!req.session || !req.session.user) {
+                throw new AuthenticationError('Authentication required. Please log in.');
+            }
+
+            const user = req.session.user;
+
+            const insertQuery = `
+                INSERT INTO event_attendee (event_id, user_id)
+                VALUES ($1, $2)
+                ON CONFLICT (event_id, user_id) DO NOTHING
+            `;
+
+            await pool.query(insertQuery, [eventId, user.user_id]);
+
+            return true;
+        },
+
+        leaveEvent: async (_, args, context) => {
+            const { eventId } = args;
+            const { req } = context;
+
+            if (!req.session || !req.session.user) {
+                throw new AuthenticationError('Authentication required. Please log in.');
+            }
+
+            const user = req.session.user;
+
+            const deleteQuery = `
+                DELETE FROM event_attendee
+                WHERE event_id = $1 AND user_id = $2
+            `;
+            const result = await pool.query(deleteQuery, [eventId, user.user_id]);
+            const deletedCount = result.rowCount;
+            return deletedCount > 0;
+        },
+
+        likeEvent: async (_, args, context) => {
+            const { eventId } = args;
+            const { req } = context;
+
+            if (!req.session || !req.session.user) {
+                throw new AuthenticationError('Authentication required. Please log in.');
+            }
+
+            const user = req.session.user;
+
+            const insertQuery = `
+                INSERT INTO event_like (event_id, user_id)
+                VALUES ($1, $2)
+                ON CONFLICT (event_id, user_id) DO NOTHING
+            `;
+
+            await pool.query(insertQuery, [eventId, user.user_id]);
+
+            return true;
+        },
+
+        removeLikeEvent: async (_, args, context) => {
+            const { eventId } = args;
+            const { req } = context;
+
+            if (!req.session || !req.session.user) {
+                throw new AuthenticationError('Authentication required. Please log in.');
+            }
+
+            const user = req.session.user;
+
+            const deleteQuery = `
+                DELETE FROM event_like
+                WHERE event_id = $1 AND user_id = $2
+            `;
+            const result = await pool.query(deleteQuery, [eventId, user.user_id]);
+            const deletedCount = result.rowCount;
+            return deletedCount > 0;
+        },
+
+        commentEvent: async (_, args, context) => {
+            const { eventId, comment } = args;
+            const { req } = context;
+
+            if (!req.session || !req.session.user) {
+                throw new AuthenticationError('Authentication required. Please log in.');
+            }
+
+            const user = req.session.user;
+
+            const insertQuery = `
+                INSERT INTO event_comment (event_id, user_id, content)
+                VALUES ($1, $2, $3)
+            `;
+            const result = await pool.query(deleteQuery, [eventId, user.user_id, comment]);
+            return true;
+        }
     }
 };

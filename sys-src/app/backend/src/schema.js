@@ -57,6 +57,14 @@ export const typeDefs = gql`
             categoryId: Int
             imageUrl: String
         ): Event!
-        deleteEvent(id: ID!): Boolean!
+        deleteEvent(id: ID!): Boolean!,
+        attendEvent(id: ID!): Boolean!
+        leaveEvent(id: ID!): Boolean!
+        likeEvent(id: ID!): Boolean!
+        removeLikeEvent(id: ID!): Boolean!
+        commentEvent(
+            id: ID!
+            comment: String!
+        ): Boolean!
     }
 `;
