@@ -1,34 +1,17 @@
-import {pool} from './database.js';
+import {pool, getEvents} from './database.js';
 import {AuthenticationError} from "apollo-server-express";
 
 export const resolvers = {
     Query: {
-        eventList: async () => {
-            const res = await pool.query(`
-                SELECT e.*, u.user_uri, u.username, u.email, u.profile_picture_url
-                FROM event e
-                JOIN app_user u ON e.creator_id = u.user_id
-            `);
-            return res.rows.map(row => ({
-                id: row.event_id,
-                title: row.title,
-                description: row.description,
-                date: row.event_date,
-                time: row.event_time,
-                location: "TODO Ort",
-                address: row.address,
-                type: "Generic", // You can join the category table for name
-                latitude: row.latitude,
-                longitude: row.longitude,
-                thumbnail: row.image_url,
-                author: {
-                    user_uri: row.user_uri,
-                    name: row.username,
-                    email: row.email,
-                    profilePicture: row.profile_picture_url,
-                },
-                attendees: [] // Can be extended later
-            }));
+        eventList: async (_, args, context) => {
+            const { req } = context;
+
+            let userId = -1; // Default to -1 for unauthenticated users
+            if (!req.session || !req.session.user) {
+                userId = req.session.user.user_id;
+            }
+
+            return getEvents(userId, true);
         },
 
         userList: async () => {
@@ -60,50 +43,12 @@ export const resolvers = {
 
         getCreatedEvents: async (_, args, context) => {
             const { req } = context;
-
-            console.log("graphql " + req.session.id)
-            console.log(req.session.user);
-
+            let userId = -1; // Default to -1 for unauthenticated users
             if (!req.session || !req.session.user) {
-                throw new AuthenticationError('Authentication required. Please log in.');
+                userId = req.session.user.user_id;
             }
 
-            const user = req.session.user;
-
-            const query = `
-                SELECT e.*, 
-                       u.user_uri,
-                       u.username, 
-                       u.email, 
-                       u.profile_picture_url
-                  FROM event e
-                  JOIN app_user u ON e.creator_id = u.user_id
-                 WHERE e.creator_id = $1
-            `;
-            const values = [ user.user_id ];
-
-            const result = await pool.query(query, values);
-
-            return result.rows.map(row => ({
-                id: row.event_id,
-                title: row.title,
-                description: row.description,
-                date: row.event_date,
-                time: row.event_time,
-                location: "TODO Ort",
-                address: row.address,
-                type: "Generic", // You can join the category table for name
-                latitude: row.latitude,
-                longitude: row.longitude,
-                thumbnail: row.image_url,
-                author: {
-                    user_uri: row.user_uri,
-                    name: row.username,
-                    email: row.email,
-                    profilePicture: row.profile_picture_url,
-                },
-                attendees: [] // Can be extended later
-            }));
+            return getEvents(userId, false);
         },
 
         getCities: async (_, args) => {
@@ -224,5 +169,102 @@ export const resolvers = {
             return deletedCount > 0;
         },
 
+        attendEvent: async (_, args, context) => {
+            const { eventId } = args;
+            const { req } = context;
+
+            if (!req.session || !req.session.user) {
+                throw new AuthenticationError('Authentication required. Please log in.');
+            }
+
+            const user = req.session.user;
+
+            const insertQuery = `
+                INSERT INTO event_attendee (event_id, user_id)
+                VALUES ($1, $2)
+                ON CONFLICT (event_id, user_id) DO NOTHING
+            `;
+
+            await pool.query(insertQuery, [eventId, user.user_id]);
+
+            return true;
+        },
+
+        leaveEvent: async (_, args, context) => {
+            const { eventId } = args;
+            const { req } = context;
+
+            if (!req.session || !req.session.user) {
+                throw new AuthenticationError('Authentication required. Please log in.');
+            }
+
+            const user = req.session.user;
+
+            const deleteQuery = `
+                DELETE FROM event_attendee
+                WHERE event_id = $1 AND user_id = $2
+            `;
+            const result = await pool.query(deleteQuery, [eventId, user.user_id]);
+            const deletedCount = result.rowCount;
+            return deletedCount > 0;
+        },
+
+        likeEvent: async (_, args, context) => {
+            const { eventId } = args;
+            const { req } = context;
+
+            if (!req.session || !req.session.user) {
+                throw new AuthenticationError('Authentication required. Please log in.');
+            }
+
+            const user = req.session.user;
+
+            const insertQuery = `
+                INSERT INTO event_like (event_id, user_id)
+                VALUES ($1, $2)
+                ON CONFLICT (event_id, user_id) DO NOTHING
+            `;
+
+            await pool.query(insertQuery, [eventId, user.user_id]);
+
+            return true;
+        },
+
+        removeLikeEvent: async (_, args, context) => {
+            const { eventId } = args;
+            const { req } = context;
+
+            if (!req.session || !req.session.user) {
+                throw new AuthenticationError('Authentication required. Please log in.');
+            }
+
+            const user = req.session.user;
+
+            const deleteQuery = `
+                DELETE FROM event_like
+                WHERE event_id = $1 AND user_id = $2
+            `;
+            const result = await pool.query(deleteQuery, [eventId, user.user_id]);
+            const deletedCount = result.rowCount;
+            return deletedCount > 0;
+        },
+
+        commentEvent: async (_, args, context) => {
+            const { eventId, comment } = args;
+            const { req } = context;
+
+            if (!req.session || !req.session.user) {
+                throw new AuthenticationError('Authentication required. Please log in.');
+            }
+
+            const user = req.session.user;
+
+            const insertQuery = `
+                INSERT INTO event_comment (event_id, user_id, content)
+                VALUES ($1, $2, $3)
+            `;
+            const result = await pool.query(deleteQuery, [eventId, user.user_id, comment]);
+            return true;
+        }
     }
 };

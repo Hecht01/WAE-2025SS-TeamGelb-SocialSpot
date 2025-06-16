@@ -26,10 +26,15 @@ export const typeDefs = gql`
         location: String!
         address: String!
         type: String!
-        attendees: [User!]
         thumbnail: String
         latitude: Float
-        longitude: Float
+        longitude: Float,
+        likeCount: Int!
+        likedByMe: Boolean!
+        attendCount: Int!
+        attendedByMe: Boolean!
+        commentCount: Int!
+        attendees: [User!]
     }
 
     type Query {
@@ -57,6 +62,14 @@ export const typeDefs = gql`
             categoryId: Int
             imageUrl: String
         ): Event!
-        deleteEvent(id: ID!): Boolean!
+        deleteEvent(id: ID!): Boolean!,
+        attendEvent(id: ID!): Boolean!
+        leaveEvent(id: ID!): Boolean!
+        likeEvent(id: ID!): Boolean!
+        removeLikeEvent(id: ID!): Boolean!
+        commentEvent(
+            id: ID!
+            comment: String!
+        ): Boolean!
     }
 `;
