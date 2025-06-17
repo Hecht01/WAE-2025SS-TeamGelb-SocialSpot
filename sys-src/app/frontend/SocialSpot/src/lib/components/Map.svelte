@@ -10,8 +10,14 @@
   import { request, gql } from 'graphql-request';
 	import EventDetailView from './EventDetailView.svelte';
 
+  export let filters: { category: string; date: string; city: string };
+
   let mapContainer: HTMLDivElement;
+  let map: L.Map;
+  let markerClusterGroup: L.MarkerClusterGroup;
   const API_URL = `${import.meta.env.VITE_API_URL || 'http://localhost:4000'}/graphql`;
+
+   let previousFilters: typeof filters = { category: '', date: '', city: '' };
 
   //GraphQL query
   const query = gql`
@@ -32,39 +38,65 @@
 
   //Create map points and map cluster
   onMount(async () => {
-    const map = L.map(mapContainer).setView([51.1, 10.5], 6);
+    map = L.map(mapContainer).setView([51.1, 10.5], 6);
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '© OpenStreetMap contributors'
     }).addTo(map);
 
-    const markerClusterGroup = L.markerClusterGroup();
+    markerClusterGroup = L.markerClusterGroup();
+    map.addLayer(markerClusterGroup);
+
+    await fetchAndDisplayEvents();
+  });
+
+$: if (
+    markerClusterGroup &&
+    JSON.stringify(filters) !== JSON.stringify(previousFilters)
+  ) {
+    previousFilters = { ...filters };
+    fetchAndDisplayEvents();
+  }
+
+  async function fetchAndDisplayEvents() {
+    markerClusterGroup.clearLayers();
 
     try {
       const data = await request(API_URL, query);
+      let filtered = data.eventList;
 
-      data.eventList.forEach((event: any) => {
+      if (filters.city) {
+        filtered = filtered.filter(event =>
+          event.location?.toLowerCase().includes(filters.city.toLowerCase())
+        );
+      }
+
+      if (filters.category) {
+        filtered = filtered.filter(event =>
+          event.type?.toLowerCase() === filters.category.toLowerCase()
+        );
+      }
+
+      if (filters.date) {
+        filtered = filtered.filter(event => event.date === filters.date);
+      }
+
+
+      filtered.forEach((event: any) => {
         if (event.latitude && event.longitude) {
           const marker = L.marker([event.latitude, event.longitude]);
-
           marker.on('click', () => {
-          console.log('event clicked:', event);
-          eventPickedForDetailView.set(event);
-          isOverlayOpen.set(true);
+            eventPickedForDetailView.set(event);
+            isOverlayOpen.set(true);
           });
-
           markerClusterGroup.addLayer(marker);
         }
       });
-        map.addLayer(markerClusterGroup);
-    }
-    catch (err) {
+
+      markerClusterGroup.refreshClusters();
+    } catch (err) {
       console.error('Error creating event in map:', err);
     }
-  });
-
-  function closeDetailView() {
-    selectedEvent = null;
   }
 </script>
 
