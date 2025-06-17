@@ -1,37 +1,101 @@
-import {pool, getEvents} from './database.js';
+import axios from 'axios';
 import {AuthenticationError} from "apollo-server-express";
+import session from "express-session";
+const { Pool } = require("pg");
+
+const pool = new Pool({
+    user: process.env.DB_USER,
+    host: process.env.DB_HOST,
+    database: process.env.DB_NAME,
+    password: process.env.DB_PASSWORD,
+    port: process.env.DB_PORT,
+});
+
+// Geocoding helper function
+const geocodeAddress = async (address, city, state, country) => {
+    try {
+        // Build query string with optional parameters
+        let query = address || '';
+        if (city) query += query ? `, ${city}` : city;
+        if (state) query += `, ${state}`;
+        if (country) query += `, ${country}`;
+
+        if (!query.trim()) {
+            throw new Error('No address information provided for geocoding');
+        }
+
+        const nominatimUrl = 'https://nominatim.openstreetmap.org/search';
+        const response = await axios.get(nominatimUrl, {
+            params: {
+                q: query,
+                format: 'json',
+                limit: 1,
+                addressdetails: 1
+            },
+            headers: {
+                'User-Agent': 'SocialSpot/1.0'
+            }
+        });
+
+        if (!response.data || response.data.length === 0) {
+            throw new Error(`Address not found: ${query}`);
+        }
+
+        const result = response.data[0];
+        return {
+            latitude: parseFloat(result.lat),
+            longitude: parseFloat(result.lon),
+            display_name: result.display_name
+        };
+    } catch (error) {
+        console.error('Geocoding error:', error.message);
+        throw new Error(`Geocoding failed: ${error.message}`);
+    }
+};
 
 export const resolvers = {
     Query: {
-        eventList: async (_, args, context) => {
-            const { req } = context;
-
-            let userId = -1; // Default to -1 for unauthenticated users
-            if (req.session && req.session.user) {
-                userId = req.session.user.user_id;
-            }
-
-            return getEvents(userId, true);
+        userList: async (parent, args) => {
+            const result = await pool.query('SELECT * FROM app_user');
+            return result.rows;
         },
 
-        userList: async () => {
-            const res = await pool.query(`SELECT * FROM app_user`);
-            return res.rows.map(user => ({
-                id: user.user_id,
-                name: user.username,
-                email: user.email,
-                profilePicture: user.profile_picture_url
+        eventList: async () => {
+            const res = await pool.query(`
+                SELECT e.*, u.username, u.email, u.profile_picture_url
+                FROM event e
+                         JOIN app_user u ON e.creator_id = u.user_id
+            `);
+            return res.rows.map(row => ({
+                id: row.event_id,
+                title: row.title,
+                description: row.description,
+                date: row.event_date,
+                time: row.event_time,
+                location: "TODO Ort",
+                address: row.address,
+                type: "Generic",
+                latitude: row.latitude,
+                longitude: row.longitude,
+                thumbnail: row.image_url,
+                author: {
+                    user_uri: row.user_uri,
+                    name: row.username,
+                    email: row.email,
+                    profilePicture: row.profile_picture_url,
+                },
+                attendees: []
             }));
         },
 
         myUser: async (_, args, context) => {
-            const { req } = context;
 
-            if (!req.session || !req.session.user) {
+
+            if (!session || !session.user) {
                 throw new AuthenticationError('Authentication required. Please log in.');
             }
 
-            const user = req.session.user;
+            const user = session.user;
 
             return {
                 user_uri: user.user_uri,
@@ -41,15 +105,52 @@ export const resolvers = {
             };
         },
 
-        getCreatedEvents: async (_, args, context) => {
-            const { req } = context;
-            let userId = -1; // Default to -1 for unauthenticated users
-            if (!req.session || !req.session.user) {
+        getCreatedEvents: async (_, args) => {
+
+            console.log("graphql " + session.id)
+            console.log(session.user);
+
+            if (!session || !session.user) {
                 throw new AuthenticationError('Authentication required. Please log in.');
             }
             userId = req.session.user.user_id;
 
-            return getEvents(userId, false);
+            const user = session.user;
+
+            const query = `
+                SELECT e.*, 
+                       u.user_uri,
+                       u.username, 
+                       u.email, 
+                       u.profile_picture_url
+                  FROM event e
+                  JOIN app_user u ON e.creator_id = u.user_id
+                 WHERE e.creator_id = $1
+            `;
+            const values = [ user.user_id ];
+
+            const result = await pool.query(query, values);
+
+            return result.rows.map(row => ({
+                id: row.event_id,
+                title: row.title,
+                description: row.description,
+                date: row.event_date,
+                time: row.event_time,
+                location: "TODO Ort",
+                address: row.address,
+                type: "Generic", // You can join the category table for name
+                latitude: row.latitude,
+                longitude: row.longitude,
+                thumbnail: row.image_url,
+                author: {
+                    user_uri: row.user_uri,
+                    name: row.username,
+                    email: row.email,
+                    profilePicture: row.profile_picture_url,
+                },
+                attendees: [] // Can be extended later
+            }));
         },
 
         getCities: async (_, args) => {
@@ -78,20 +179,19 @@ export const resolvers = {
     },
 
     Mutation: {
-        createEvent: async (_, args, context) => {
+        createEvent: async (_, args) => {
             const {
                 title, description, date, time,
                 cityId, address, latitude, longitude,
                 categoryId, imageUrl
             } = args;
 
-            const { req } = context;
 
-            if (!req.session || !req.session.user) {
+            if (session || session.user) {
                 throw new AuthenticationError('Authentication required. Please log in.');
             }
 
-            const user = req.session.user;
+            const user = session.user;
 
             if(imageUrl) {
                 const checkQuery = `
@@ -102,6 +202,38 @@ export const resolvers = {
                 `;
                 const checkResult = await pool.query(checkQuery, [imageUrl, user.user_id]);
                 console.log(checkResult);
+            }
+
+            let finalLatitude = latitude;
+            let finalLongitude = longitude;
+
+            // If coordinates are not provided, try to geocode the address
+            if (!latitude || !longitude) {
+                try {
+                    // First try to get city info from database if cityId is provided
+                    let cityName = city;
+                    let stateName = state;
+
+                    if (!cityName && cityId) {
+                        const cityQuery = `SELECT name, district, state FROM city WHERE city_id = $1`;
+                        const cityResult = await pool.query(cityQuery, [cityId]);
+                        if (cityResult.rows.length > 0) {
+                            cityName = cityResult.rows[0].name;
+                            stateName = cityResult.rows[0].state || cityResult.rows[0].district;
+                        }
+                    }
+
+                    const geocodeResult = await geocodeAddress(address, cityName, stateName, country);
+                    finalLatitude = geocodeResult.latitude;
+                    finalLongitude = geocodeResult.longitude;
+
+                    console.log(`Geocoded address: ${address}, ${cityName} -> ${finalLatitude}, ${finalLongitude}`);
+                } catch (geocodeError) {
+                    console.warn('Geocoding failed:', geocodeError.message);
+                    // Continue without coordinates if geocoding fails
+                    finalLatitude = null;
+                    finalLongitude = null;
+                }
             }
 
             const insertQuery = `
@@ -146,14 +278,13 @@ export const resolvers = {
             };
         },
 
-        deleteEvent : async (_, args, context) => {
+        deleteEvent : async (_, args) => {
             const { eventId } = args;
-            const { req } = context;
 
-            if (!req.session || !req.session.user) {
+            if (session || session.user) {
                 throw new AuthenticationError('Authentication required. Please log in.');
             }
-            const user = req.session.user;
+            const user = session.user;
 
             const deleteQuery = `
                 WITH deleted_rows AS (
@@ -163,7 +294,7 @@ export const resolvers = {
                 )
                 SELECT COUNT(*) FROM deleted_rows;
             `;
-            const result = await pool.query(deleteQuery, [req, user.user_id]);
+            const result = await pool.query(deleteQuery, [eventId, user.user_id]);
 
             const deletedCount = parseInt(result.rows[0].count);
 
