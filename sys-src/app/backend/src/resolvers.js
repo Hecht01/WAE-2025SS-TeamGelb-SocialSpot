@@ -1,15 +1,6 @@
 import axios from 'axios';
+import {pool, getEvents} from './database.js';
 import {AuthenticationError} from "apollo-server-express";
-import session from "express-session";
-const { Pool } = require("pg");
-
-const pool = new Pool({
-    user: process.env.DB_USER,
-    host: process.env.DB_HOST,
-    database: process.env.DB_NAME,
-    password: process.env.DB_PASSWORD,
-    port: process.env.DB_PORT,
-});
 
 // Geocoding helper function
 const geocodeAddress = async (address, city, state, country) => {
@@ -55,47 +46,35 @@ const geocodeAddress = async (address, city, state, country) => {
 
 export const resolvers = {
     Query: {
-        userList: async (parent, args) => {
-            const result = await pool.query('SELECT * FROM app_user');
-            return result.rows;
+        eventList: async (_, args, context) => {
+            const { req } = context;
+
+            let userId = -1; // Default to -1 for unauthenticated users
+            if (req.session && req.session.user) {
+                userId = req.session.user.user_id;
+            }
+
+            return getEvents(userId, true);
         },
 
-        eventList: async () => {
-            const res = await pool.query(`
-                SELECT e.*, u.username, u.email, u.profile_picture_url
-                FROM event e
-                         JOIN app_user u ON e.creator_id = u.user_id
-            `);
-            return res.rows.map(row => ({
-                id: row.event_id,
-                title: row.title,
-                description: row.description,
-                date: row.event_date,
-                time: row.event_time,
-                location: "TODO Ort",
-                address: row.address,
-                type: "Generic",
-                latitude: row.latitude,
-                longitude: row.longitude,
-                thumbnail: row.image_url,
-                author: {
-                    user_uri: row.user_uri,
-                    name: row.username,
-                    email: row.email,
-                    profilePicture: row.profile_picture_url,
-                },
-                attendees: []
+        userList: async () => {
+            const res = await pool.query(`SELECT * FROM app_user`);
+            return res.rows.map(user => ({
+                id: user.user_id,
+                name: user.username,
+                email: user.email,
+                profilePicture: user.profile_picture_url
             }));
         },
 
         myUser: async (_, args, context) => {
+            const { req } = context;
 
-
-            if (!session || !session.user) {
+            if (!req.session || !req.session.user) {
                 throw new AuthenticationError('Authentication required. Please log in.');
             }
 
-            const user = session.user;
+            const user = req.session.user;
 
             return {
                 user_uri: user.user_uri,
@@ -105,52 +84,15 @@ export const resolvers = {
             };
         },
 
-        getCreatedEvents: async (_, args) => {
-
-            console.log("graphql " + session.id)
-            console.log(session.user);
-
-            if (!session || !session.user) {
+        getCreatedEvents: async (_, args, context) => {
+            const { req } = context;
+            let userId = -1; // Default to -1 for unauthenticated users
+            if (!req.session || !req.session.user) {
                 throw new AuthenticationError('Authentication required. Please log in.');
             }
             userId = req.session.user.user_id;
 
-            const user = session.user;
-
-            const query = `
-                SELECT e.*, 
-                       u.user_uri,
-                       u.username, 
-                       u.email, 
-                       u.profile_picture_url
-                  FROM event e
-                  JOIN app_user u ON e.creator_id = u.user_id
-                 WHERE e.creator_id = $1
-            `;
-            const values = [ user.user_id ];
-
-            const result = await pool.query(query, values);
-
-            return result.rows.map(row => ({
-                id: row.event_id,
-                title: row.title,
-                description: row.description,
-                date: row.event_date,
-                time: row.event_time,
-                location: "TODO Ort",
-                address: row.address,
-                type: "Generic", // You can join the category table for name
-                latitude: row.latitude,
-                longitude: row.longitude,
-                thumbnail: row.image_url,
-                author: {
-                    user_uri: row.user_uri,
-                    name: row.username,
-                    email: row.email,
-                    profilePicture: row.profile_picture_url,
-                },
-                attendees: [] // Can be extended later
-            }));
+            return getEvents(userId, false);
         },
 
         getCities: async (_, args) => {
@@ -179,19 +121,20 @@ export const resolvers = {
     },
 
     Mutation: {
-        createEvent: async (_, args) => {
+        createEvent: async (_, args, context) => {
             const {
                 title, description, date, time,
                 cityId, address, latitude, longitude,
                 categoryId, imageUrl
             } = args;
 
+            const { req } = context;
 
-            if (session || session.user) {
+            if (!req.session || !req.session.user) {
                 throw new AuthenticationError('Authentication required. Please log in.');
             }
 
-            const user = session.user;
+            const user = req.session.user;
 
             if(imageUrl) {
                 const checkQuery = `
@@ -211,8 +154,9 @@ export const resolvers = {
             if (!latitude || !longitude) {
                 try {
                     // First try to get city info from database if cityId is provided
-                    let cityName = city;
-                    let stateName = state;
+                    let cityName;
+                    let stateName;
+                    let country = 'DE';
 
                     if (!cityName && cityId) {
                         const cityQuery = `SELECT name, district, state FROM city WHERE city_id = $1`;
@@ -256,35 +200,17 @@ export const resolvers = {
             const result = await pool.query(insertQuery, values);
             const event = result.rows[0];
 
-            return {
-                id: event.event_id,
-                title: event.title,
-                description: event.description,
-                date: event.event_date,
-                time: event.event_time,
-                location: 4207, //event.city_id.toString(),
-                address: event.address,
-                type: "Generic",
-                latitude: event.latitude,
-                longitude: event.longitude,
-                thumbnail: event.image_url,
-                author: {
-                    user_uri: user.user_uri,
-                    name: user.username,
-                    email: user.email,
-                    profilePicture: user.profile_picture_url
-                },
-                attendees: []
-            };
+            return event.event_id;
         },
 
-        deleteEvent : async (_, args) => {
+        deleteEvent : async (_, args, context) => {
             const { eventId } = args;
+            const { req } = context;
 
-            if (session || session.user) {
+            if (!req.session || !req.session.user) {
                 throw new AuthenticationError('Authentication required. Please log in.');
             }
-            const user = session.user;
+            const user = req.session.user;
 
             const deleteQuery = `
                 WITH deleted_rows AS (

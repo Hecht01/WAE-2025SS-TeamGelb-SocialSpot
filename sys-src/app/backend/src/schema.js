@@ -61,7 +61,7 @@ export const typeDefs = gql`
             longitude: Float
             categoryId: Int
             imageUrl: String
-        ): Event!
+        ): ID!
         deleteEvent(id: ID!): Boolean!,
         attendEvent(id: ID!): Boolean!
         leaveEvent(id: ID!): Boolean!
