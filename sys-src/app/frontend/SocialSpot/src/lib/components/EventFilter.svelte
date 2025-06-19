@@ -46,19 +46,7 @@ const API_URL = `${import.meta.env.VITE_API_URL || 'http://localhost:4000'}/api`
 
 
 <div class="sosp-container">
-  <label>
-    Categories:
-    <select bind:value={category}>
-      <option value="">All</option>
-      <option value="party">Party</option>
-      <option value="musik">Music</option>
-      <option value="sport">Sport</option>
-      <option value="kunst">Art</option>
-      <option value="technologie">Technology</option>
-      <option value="bildung">Education</option>
-    </select>
-  </label>
-
+  <h1 class="sosp-header"> Filter </h1>
   <label>
     City:
      <input id="ort" type="text" class="sosp-input" placeholder="Enter city location" bind:value={inputText} on:input={(e) => fetchSuggestionsCity(e.target.value)} />

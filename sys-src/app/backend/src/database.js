@@ -66,11 +66,15 @@ export async function getEvents(userId, fetchAll) {
 
     const res = await pool.query(query, [userId, fetchAll]);
 
+    const formatDate = (date) => {
+        return date.toLocaleDateString('sv-SE'); //for filter in map
+};
+
     return res.rows.map(row => ({
         id: row.event_id,
         title: row.title,
         description: row.description,
-        date: row.event_date,
+        date: formatDate(row.event_date),
         time: row.event_time,
         location: row.city_name,
         address: row.address,

@@ -46,7 +46,7 @@
                 eventPickedForDetailView.set(event);
             }} >{event.title}</button>
         </h2>
-        <p class="event-p"><strong>Date:</strong> {new Date(parseInt(event.date) ).toLocaleDateString()}; Time: {event.time.substring(0,5)}</p>
+        <p class="event-p"><strong>Date:</strong> {event.date}; Time: {event.time?.substring(0,5)}</p>
         <p class="event-p"><strong>Place:</strong> {event.address}</p>
         <p class="event-p truncate"><strong>Description:</strong> {event.description}</p>
         <button class="sosp-button-secondary">Join</button>

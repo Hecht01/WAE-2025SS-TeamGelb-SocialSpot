@@ -65,6 +65,9 @@ $: if (
       const data = await request(API_URL, query);
       let filtered = data.eventList;
 
+      console.log("Alle Events aus Backend:", data.eventList);
+console.log("Aktive Filter:", filters);
+
       if (filters.city) {
         filtered = filtered.filter(event =>
           event.location?.toLowerCase().includes(filters.city.toLowerCase())
