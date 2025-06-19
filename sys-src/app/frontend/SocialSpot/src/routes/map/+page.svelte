@@ -5,6 +5,7 @@
   import "$lib/style.css";
 
   let filters = {
+    title: '',
     category: '',
     date: '',
     city: ''

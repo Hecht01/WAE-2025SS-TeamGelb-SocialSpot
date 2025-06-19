@@ -4,6 +4,7 @@
    import { request, gql } from 'graphql-request';
   const dispatch = createEventDispatcher();
 
+  let title = '';
   let category = '';
   let date = '';
   let inputText = ""; 
@@ -64,27 +65,16 @@ const API_URL = `${import.meta.env.VITE_API_URL || 'http://localhost:4000'}/api`
   </label>
 
   <label>
-    Event name:
-     <input id="ort" type="text" class="sosp-input" placeholder="Enter event name" bind:value={inputText} on:input={(e) => fetchSuggestionsCity(e.target.value)} />
-      {#if suggestions.length > 0}
-        <div class="dropdown">
-            {#each suggestions as suggestion}
-                <div
-                    class="dropdown-item"
-                    on:click={() => selectSuggestionCity(suggestion)}>
-                    {suggestion.name} ({suggestion.district}, {suggestion.state})
-                </div>
-            {/each}
-        </div>
-    {/if}
-  </label>
+  Event name:
+  <input type="text" class="sosp-input" bind:value={title} placeholder="Enter event name" />
+</label>
 
   <label>
     Date:
     <input type="date" bind:value={date} />
   </label>
 
-  <button class="sosp-button" on:click={() => dispatch('filter', { category, date, city: inputText })}>
+  <button class="sosp-button" on:click={() => dispatch('filter', { title, category, date, city: inputText })}>
     Apply
   </button>
 </div>
