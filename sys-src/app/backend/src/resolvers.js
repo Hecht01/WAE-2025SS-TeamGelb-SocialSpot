@@ -1,6 +1,6 @@
 import axios from 'axios';
 import {pool, getEvents} from './database.js';
-import {AuthenticationError} from "apollo-server-express";
+import {AuthenticationError, UserInputError} from "apollo-server-express";
 
 // Geocoding helper function
 const geocodeAddress = async (address, city, state, country) => {
@@ -124,8 +124,7 @@ export const resolvers = {
         createEvent: async (_, args, context) => {
             const {
                 title, description, date, time,
-                cityId, address, latitude, longitude,
-                categoryId, imageUrl
+                cityId, address, imageUrl
             } = args;
 
             const { req } = context;
@@ -147,46 +146,41 @@ export const resolvers = {
                 console.log(checkResult);
             }
 
-            let finalLatitude = latitude;
-            let finalLongitude = longitude;
+            let latitude = null;
+            let longitude = null;
 
-            // If coordinates are not provided, try to geocode the address
-            if (!latitude || !longitude) {
-                try {
-                    // First try to get city info from database if cityId is provided
-                    let cityName;
-                    let stateName;
-                    let country = 'DE';
+            try {
+                // First try to get city info from database if cityId is provided
+                let cityName;
+                let stateName;
+                let country = 'DE';
 
-                    if (!cityName && cityId) {
-                        const cityQuery = `SELECT name, district, state FROM city WHERE city_id = $1`;
-                        const cityResult = await pool.query(cityQuery, [cityId]);
-                        if (cityResult.rows.length > 0) {
-                            cityName = cityResult.rows[0].name;
-                            stateName = cityResult.rows[0].state || cityResult.rows[0].district;
-                        }
+                if (!cityName && cityId) {
+                    const cityQuery = `SELECT name, district, state FROM city WHERE city_id = $1`;
+                    const cityResult = await pool.query(cityQuery, [cityId]);
+                    if (cityResult.rows.length > 0) {
+                        cityName = cityResult.rows[0].name;
+                        stateName = cityResult.rows[0].state || cityResult.rows[0].district;
                     }
-
-                    const geocodeResult = await geocodeAddress(address, cityName, stateName, country);
-                    finalLatitude = geocodeResult.latitude;
-                    finalLongitude = geocodeResult.longitude;
-
-                    console.log(`Geocoded address: ${address}, ${cityName} -> ${finalLatitude}, ${finalLongitude}`);
-                } catch (geocodeError) {
-                    console.warn('Geocoding failed:', geocodeError.message);
-                    // Continue without coordinates if geocoding fails
-                    finalLatitude = null;
-                    finalLongitude = null;
                 }
+
+                const geocodeResult = await geocodeAddress(address, cityName, stateName, country);
+                latitude = geocodeResult.latitude;
+                longitude = geocodeResult.longitude;
+
+                console.log(`Geocoded address: ${address}, ${cityName} -> ${latitude}, ${longitude}`);
+            } catch (geocodeError) {
+                console.warn('Geocoding failed:', geocodeError.message);
+                throw new UserInputError('Invalid Address provided');
             }
 
             const insertQuery = `
                 INSERT INTO event (
                     title, description, event_date, event_time,
                     city_id, address, latitude, longitude,
-                    creator_id, category_id, image_url
+                    creator_id, image_url
                 )
-                VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
+                VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
                 RETURNING *
             `;
 
@@ -194,7 +188,7 @@ export const resolvers = {
             const values = [
                 title, description, date, time,
                 cityId, address, latitude, longitude,
-                user.user_id, categoryId, imageUrl
+                user.user_id, imageUrl
             ];
 
             const result = await pool.query(insertQuery, values);

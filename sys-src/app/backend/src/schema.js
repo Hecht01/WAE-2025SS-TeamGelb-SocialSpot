@@ -57,11 +57,8 @@ export const typeDefs = gql`
             time: String!
             cityId: Int!
             address: String
-            latitude: Float
-            longitude: Float
-            categoryId: Int
             imageUrl: String
-        ): ID!
+        ): ID
         deleteEvent(id: ID!): Boolean!,
         attendEvent(id: ID!): Boolean!
         leaveEvent(id: ID!): Boolean!

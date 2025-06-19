@@ -1,5 +1,5 @@
 import { render } from '@testing-library/svelte';
-import Map from './Map.svelte';
+import Map from '$lib/components/Map.svelte';
 import { describe, it, expect, test } from 'vitest';
 import { vi } from 'vitest';
 vi.mock('graphql-request');

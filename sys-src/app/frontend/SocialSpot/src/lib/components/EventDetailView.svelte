@@ -61,7 +61,7 @@
 
             <div class="event-infos">
                 <h2 class="event-header">{$eventPickedForDetailView.title}</h2>
-                <p class="event-p"><strong>Date:</strong> {new Date(parseInt($eventPickedForDetailView.date) ).toLocaleDateString()}; Time: {$eventPickedForDetailView.time.substring(0,5)}</p>
+                <p class="event-p"><strong>Date:</strong> {$eventPickedForDetailView.date}; Time: {$eventPickedForDetailView.time.substring(0,5)}</p>
                 <p class="event-p"><strong>Place:</strong> {$eventPickedForDetailView.address}</p>
                 <p class="event-p"><strong>Description:</strong> {$eventPickedForDetailView.description}</p>
                 <button class="sosp-button-secondary">Join</button>
