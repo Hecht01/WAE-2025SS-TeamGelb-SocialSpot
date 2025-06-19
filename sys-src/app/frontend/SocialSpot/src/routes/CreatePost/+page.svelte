@@ -195,8 +195,8 @@
         try {
             console.log('selectedFile:', selectedFile);
             console.log('uploadedImageFilename:', uploadedImageFilename);
-            if (selectedFile !== null && uploadedImageFilename !== '') 
-            {
+            console.log('Event Address:', eventAddress);
+            if (selectedFile !== null && uploadedImageFilename !== '') {
                 uploadedImageFilename = await uploadImage();
                 console.log('Image uploaded:', uploadedImageFilename);
             }
@@ -219,7 +219,6 @@
                         address: $address,
                         imageUrl: $imageUrl
                     )
-                    
                 }
             `;
 
@@ -229,6 +228,7 @@
                 date,
                 time,
                 cityId,
+                address: eventAddress,
                 imageUrl: uploadedImageFilename || null
             };
 
@@ -266,6 +266,7 @@
             imageUrl = '';
             selectedFile = null;
             uploadedImageFilename = '';
+            eventAddress = ''; // **eventAddress wird zurückgesetzt**
         } catch (error) {
             console.error('Error creating event:', error);
             dialogMessage = "An error occurred while creating the event.";
@@ -284,11 +285,11 @@
 <!-- Content of Page -->
 <form on:submit={handleSubmit}>
 <div class="sosp-container">
-    <label for="titel">Titel</label>
-    <input id="titel" type="text" class="sosp-input" placeholder="Titel of the event" bind:value={title} required/>
+    <label for="titel">Title</label>
+    <input id="titel" type="text" class="sosp-input" placeholder="Title of the event" bind:value={title} required/>
 
-    <label for="location" style="margin-top:1rem;">Ort</label>
-    <input id="location" type="text" class="sosp-input" placeholder="Location where the event takes place" bind:value={inputText} on:input={(e) => fetchSuggestions(e.target.value)} />
+    <label for="location" style="margin-top:1rem;">City</label>
+    <input id="location" type="text" class="sosp-input" placeholder="City where the event takes place" bind:value={inputText} on:input={(e) => fetchSuggestions(e.target.value)} />
 
     <!-- Dropdown für Vorschläge -->
     {#if suggestions.length > 0}
