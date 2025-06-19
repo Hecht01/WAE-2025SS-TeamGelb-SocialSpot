@@ -171,8 +171,6 @@
                     $date: String!,
                     $time: String!,
                     $cityId: Int!,
-                    $latitude: Float,
-                    $longitude: Float,
                     $imageUrl: String
                 ) {
                     createEvent(
@@ -181,14 +179,8 @@
                         date: $date,
                         time: $time,
                         cityId: $cityId,
-                        latitude: $latitude,
-                        longitude: $longitude,
                         imageUrl: $imageUrl
-                    ) {
-                        id
-                        title
-                        description
-                    }
+                    )
                 }
             `;
 

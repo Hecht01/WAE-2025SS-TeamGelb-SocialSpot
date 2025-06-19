@@ -68,7 +68,7 @@ export async function getEvents(userId, fetchAll) {
 
     const formatDate = (date) => {
         return date.toLocaleDateString('sv-SE'); //for filter in map
-};
+    };
 
     return res.rows.map(row => ({
         id: row.event_id,
