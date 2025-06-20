@@ -1,9 +1,19 @@
 <script lang="ts">
     import {eventPickedForDetailView, isOverlayOpen} from "../../stores/OverlayStore";
     import {Heart, MessageCircle} from "lucide-svelte";
+    import {createEventActions} from "../../stores/eventInteractions";
 
     const IMAGE_URL = `${import.meta.env.VITE_API_URL || 'http://localhost:4000'}/api/images/`;
 
+    let eventActions: any = null;
+    $: if ($eventPickedForDetailView) {
+        eventActions = createEventActions($eventPickedForDetailView);
+    }
+
+    $: isLiked = eventActions?.isLiked;
+    $: isJoined = eventActions?.isJoined;
+    $: localLikeCount = eventActions?.localLikeCount;
+    $: isLoading = eventActions?.isLoading;
 </script>
 
 {#if $eventPickedForDetailView}
@@ -45,26 +55,46 @@
                         eventPickedForDetailView.set(null);
                         }}>&times</button>
                 <img src={`${IMAGE_URL}${$eventPickedForDetailView.thumbnail}`} alt="{$eventPickedForDetailView.title}" class="event-image-large" />
-                <!--
+
                 <div class="event-image-overlay">
                     <div class="event-image-overlay-item">
-                        <Heart class="w-5 h-5 text-white" />
-                        <span>{$eventPickedForDetailView.likes}</span>
+                        <!-- disabled means you cant click on a button while that field is true -->
+                        <button
+                                on:click={eventActions.toggleLike}
+                                disabled={$isLoading}
+                        >
+                            <Heart
+                                    class="w-5 h-5 text-white {$isLiked ? 'fill-current' : ''}"
+                            />
+                        </button>
+                        <span>{$localLikeCount}</span>
                     </div>
                     <div class="event-image-overlay-item">
                         <MessageCircle class="w-5 h-5 text-white" />
-                        <span>{$eventPickedForDetailView.comments}</span>
+                        <span>{$eventPickedForDetailView.commentCount}</span>
                     </div>
+
                 </div>
-                -->
+
             </div>
 
             <div class="event-infos">
                 <h2 class="event-header">{$eventPickedForDetailView.title}</h2>
                 <p class="event-p"><strong>Date:</strong> {$eventPickedForDetailView.date}; Time: {$eventPickedForDetailView.time.substring(0,5)}</p>
-                <p class="event-p"><strong>Place:</strong> {$eventPickedForDetailView.address}</p>
+                <p class="event-p"><strong>Place:</strong> {$eventPickedForDetailView.location}</p>
+                <p class="event-p"><strong>Address:</strong> {$eventPickedForDetailView.address}</p>
                 <p class="event-p"><strong>Description:</strong> {$eventPickedForDetailView.description}</p>
-                <button class="sosp-button-secondary">Join</button>
+                <button
+                        class="sosp-button-secondary"
+                        on:click={eventActions.toggleJoin}
+                        disabled={$isLoading}
+                >
+                    {#if $isJoined}
+                        Leave
+                    {:else}
+                        Join
+                    {/if}
+                </button>
             </div>
         </div>
     </div>

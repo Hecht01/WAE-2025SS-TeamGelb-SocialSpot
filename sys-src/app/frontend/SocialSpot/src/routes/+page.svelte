@@ -1,6 +1,7 @@
-<script>
+<script lang="ts">
     import EventFeed from '$lib/components/EventFeed.svelte';
     import { onMount } from 'svelte';
+    import { globalEvents, eventStoreActions } from "../stores/EventStore.js";
 
     const GRAPHQL_URL = `${import.meta.env.VITE_API_URL || 'http://localhost:4000'}/graphql`;
 
@@ -81,24 +82,36 @@
         }
     ]*/
 
-    let events = [];
-    let loading = true;
+    let loading: boolean|null = true;
     let error = null;
 
     const query = `
     query {
       eventList {
         id
+        author {
+          user_uri
+          name
+          email
+          profilePicture
+        }
         title
         description
         date
         time
         location
+        address
         type
+        thumbnail
         latitude
         longitude
-        thumbnail
-        author {
+        likeCount
+        likedByMe
+        attendCount
+        attendedByMe
+        commentCount
+        attendees {
+          user_uri
           name
           email
           profilePicture
@@ -114,12 +127,12 @@
                 headers: {
                     'Content-Type': 'application/json'
                 },
+                credentials: 'include',
                 body: JSON.stringify({ query })
             });
-
             const json = await res.json();
-            events = json.data.eventList;
-            console.log(events)
+            eventStoreActions.setEvents(json.data.eventList);
+            console.log(json.data.eventList)
         } catch (err) {
             error = err.message;
         } finally {
@@ -144,5 +157,5 @@
 {:else if error}
     <p>Error while Loading: {error}</p>
 {:else}
-    <EventFeed {events} />
+    <EventFeed events={$globalEvents} />
 {/if}
