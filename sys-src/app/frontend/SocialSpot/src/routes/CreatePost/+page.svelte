@@ -46,6 +46,37 @@
         background-color: #f0f0f0;
     }
   
+    .error {
+        border: 2px solid red;
+        border-radius: 4px;
+    }
+
+    .dialog {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background-color: white;
+        border: 1px solid #ccc;
+        border-radius: 8px;
+        padding: 16px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        z-index: 1000;
+    }
+
+    .dialog button {
+        margin-top: 16px;
+        padding: 8px 16px;
+        background-color: #007bff;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+    }
+
+    .dialog button:hover {
+        background-color: #0056b3;
+    }
 </style>
 
 
@@ -68,6 +99,10 @@
     let imageUrl = '';
     let selectedFile: File | null | undefined = null;
     let uploadedImageFilename = '';
+    let eventAddress = '';
+    let errors = { date: false }; 
+    let dialogMessage = ""; 
+    let showDialog = false;
 
     let inputText = ""; 
     let suggestions: Array<{ id: string; name: string; district: string; state: string }> = []; 
@@ -97,7 +132,7 @@
             const response = await request(GRAPHQL_URL, query, { nameLike: text });
             suggestions = response.getCities || [];
         } catch (error) {
-            console.error("Fehler beim Abrufen der Vorschläge:", error);
+            console.error("Error fetchSuggestions:", error);
         }
 
         console.log("GraphQL Query:", query);
@@ -109,8 +144,9 @@
     function selectSuggestion(suggestion: { id: string; name: string }) {
         inputText = `${suggestion.name}, ${suggestion.district}, ${suggestion.state}`;
         cityId = parseInt(suggestion.id, 10); 
+        selectedCityId = suggestion.id;
         suggestions = []; 
-        console.log("Ausgewählte Stadt-ID:", cityId); 
+        console.log("selected city-ID:", cityId); 
     }
 
     
@@ -159,8 +195,8 @@
         try {
             console.log('selectedFile:', selectedFile);
             console.log('uploadedImageFilename:', uploadedImageFilename);
-            if (selectedFile !== null && uploadedImageFilename !== '') 
-            {
+            console.log('Event Address:', eventAddress);
+            if (selectedFile !== null && uploadedImageFilename !== '') {
                 uploadedImageFilename = await uploadImage();
                 console.log('Image uploaded:', uploadedImageFilename);
             }
@@ -171,8 +207,7 @@
                     $date: String!,
                     $time: String!,
                     $cityId: Int!,
-                    $latitude: Float,
-                    $longitude: Float,
+                    $address: String,
                     $imageUrl: String
                 ) {
                     createEvent(
@@ -181,14 +216,9 @@
                         date: $date,
                         time: $time,
                         cityId: $cityId,
-                        latitude: $latitude,
-                        longitude: $longitude,
+                        address: $address,
                         imageUrl: $imageUrl
-                    ) {
-                        id
-                        title
-                        description
-                    }
+                    )
                 }
             `;
 
@@ -198,6 +228,7 @@
                 date,
                 time,
                 cityId,
+                address: eventAddress,
                 imageUrl: uploadedImageFilename || null
             };
 
@@ -223,6 +254,9 @@
 
             console.log('Event created:', result.data.createEvent);
 
+            dialogMessage = `Event "${title}" created successfully!`;
+            showDialog = true;
+
             // Reset form
             title = '';
             description = '';
@@ -232,8 +266,11 @@
             imageUrl = '';
             selectedFile = null;
             uploadedImageFilename = '';
+            eventAddress = ''; // **eventAddress wird zurückgesetzt**
         } catch (error) {
             console.error('Error creating event:', error);
+            dialogMessage = "An error occurred while creating the event.";
+            showDialog = true;
         }
     }
 
@@ -248,11 +285,11 @@
 <!-- Content of Page -->
 <form on:submit={handleSubmit}>
 <div class="sosp-container">
-    <label for="titel">Titel</label>
-    <input id="titel" type="text" class="sosp-input" placeholder="Titel des Events" bind:value={title} required/>
+    <label for="titel">Title</label>
+    <input id="titel" type="text" class="sosp-input" placeholder="Title of the event" bind:value={title} required/>
 
-    <label for="ort" style="margin-top:1rem;">Ort</label>
-    <input id="ort" type="text" class="sosp-input" placeholder="Ort an dem das Event stattfindet" bind:value={inputText} on:input={(e) => fetchSuggestions(e.target.value)} />
+    <label for="location" style="margin-top:1rem;">City</label>
+    <input id="location" type="text" class="sosp-input" placeholder="City where the event takes place" bind:value={inputText} on:input={(e) => fetchSuggestions(e.target.value)} />
 
     <!-- Dropdown für Vorschläge -->
     {#if suggestions.length > 0}
@@ -267,24 +304,31 @@
         </div>
     {/if}
 
-    <label for="beschreibung" style="margin-top:1rem;">Beschreibung</label>
-    <input id="beschreibung" type="text" class="sosp-input" placeholder="Beschreibung des Events" bind:value={description} required/>
+    <label for="event-address" style="margin-top:1rem;">Address</label>
+    <input
+        id="event-address"
+        type="text"
+        class="sosp-input"
+        placeholder="Enter street and house number"
+        bind:value={eventAddress} />    
+        
+    <label for="description" style="margin-top:1rem;">Description</label>
+    <input id="description" type="text" class="sosp-input" placeholder="Event description" bind:value={description} required/>
 
-    <label for="startdatum" style="margin-top:1rem;">Startdatum</label>
-    <input id="startdatum" type="date" class="sosp-input" placeholder="Startdatum" bind:value={date} required/>
+    <label for="startdate" style="margin-top:1rem;">Start Date</label>
+    <input id="startdate" type="date" class="sosp-input" placeholder="Start date" bind:value={date} class:error={errors.date} required/>
 
-    <label for="dauer" style="margin-top:1rem;">Dauer des Events (in Tagen)</label>
-    <input id="dauer" type="number" class="sosp-input" placeholder="Dauer des Events in Tagen" min="1" />
+
     
-    <label for="startzeit" style="margin-top:1rem;">Startzeit</label>
-    <input id="startzeit" type="time" class="sosp-input" placeholder="Startzeit" bind:value={time} required/>
+    <label for="starttime" style="margin-top:1rem;">Start Time</label>
+    <input id="starttime" type="time" class="sosp-input" placeholder="Start time" bind:value={time} required/>
 
-    <label for="bild" style="margin-top:1rem;">Bild hochladen</label>
+    <label for="bild" style="margin-top:1rem;">Upload Image</label>
     {#if imageUrl}
-        <img src={imageUrl} alt="Vorschau" style="max-width: 100%; margin-top: 1rem; border-radius: 0.5rem;" />
+        <img src={imageUrl} alt="Preview" style="max-width: 100%; margin-top: 1rem; border-radius: 0.5rem;" />
     {:else}
         <label class="file-upload-label" for="bild">
-            Bild auswählen
+            Choose Image
             <input
                 id="bild"
                 type="file"
@@ -300,6 +344,13 @@
     <!-- Distance between buttons -->
     <div style="height: 2rem;"></div>
 
-    <button type="submit" class="sosp-button">Event Anlegen</button>
+    <button type="submit" class="sosp-button">Create Event</button>
 </div>
 </form>
+
+{#if showDialog}
+    <div class="dialog">
+        <p>{dialogMessage}</p>
+        <button type="button" on:click={() => (showDialog = false)}>OK</button>
+    </div>
+{/if}

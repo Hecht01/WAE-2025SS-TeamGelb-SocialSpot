@@ -10,14 +10,14 @@
   import { request, gql } from 'graphql-request';
 	import EventDetailView from './EventDetailView.svelte';
 
-  export let filters: { category: string; date: string; city: string };
+  export let filters: { category: string; date: string; city: string; title: string; };
 
   let mapContainer: HTMLDivElement;
   let map: L.Map;
   let markerClusterGroup: L.MarkerClusterGroup;
   const API_URL = `${import.meta.env.VITE_API_URL || 'http://localhost:4000'}/graphql`;
 
-   let previousFilters: typeof filters = { category: '', date: '', city: '' };
+   let previousFilters: typeof filters = { category: '', date: '', city: '', title: '' };
 
   //GraphQL query
   const query = gql`
@@ -65,6 +65,9 @@ $: if (
       const data = await request(API_URL, query);
       let filtered = data.eventList;
 
+      console.log("Alle Events aus Backend:", data.eventList);
+      console.log("Aktive Filter:", filters);
+
       if (filters.city) {
         filtered = filtered.filter(event =>
           event.location?.toLowerCase().includes(filters.city.toLowerCase())
@@ -81,7 +84,13 @@ $: if (
         filtered = filtered.filter(event => event.date === filters.date);
       }
 
+      if (filters.title) {
+        filtered = filtered.filter(event =>
+        event.title?.toLowerCase().includes(filters.title.toLowerCase())
+        );
+      }
 
+      markerClusterGroup.clearLayers();
       filtered.forEach((event: any) => {
         if (event.latitude && event.longitude) {
           const marker = L.marker([event.latitude, event.longitude]);
@@ -93,7 +102,6 @@ $: if (
         }
       });
 
-      markerClusterGroup.refreshClusters();
     } catch (err) {
       console.error('Error creating event in map:', err);
     }
