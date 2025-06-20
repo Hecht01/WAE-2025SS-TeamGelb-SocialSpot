@@ -1,116 +1,19 @@
 <script lang="ts">
     import {eventPickedForDetailView, isOverlayOpen} from "../../stores/OverlayStore";
     import {Heart, MessageCircle} from "lucide-svelte";
+    import {createEventActions} from "../../stores/eventInteractions";
 
     const IMAGE_URL = `${import.meta.env.VITE_API_URL || 'http://localhost:4000'}/api/images/`;
-    const GRAPHQL_URL = `${import.meta.env.VITE_API_URL || 'http://localhost:4000'}/graphql`;
 
-    let isLiked = false;
-    let isJoined = false;
-    let localLikeCount = 0;
-    let isLoading = false;
-
-    $: if($eventPickedForDetailView){
-        isLiked = $eventPickedForDetailView.likedByMe || false;
-        isJoined = $eventPickedForDetailView.attendedByMe || false;
-        localLikeCount = $eventPickedForDetailView.likeCount || 0;
+    let eventActions: any = null;
+    $: if ($eventPickedForDetailView) {
+        eventActions = createEventActions($eventPickedForDetailView);
     }
 
-    // mutation helper function
-    async function executeMutation(mutation:string, variables: any = {}){
-        try {
-            isLoading = true;
-            const response = await fetch(GRAPHQL_URL, {
-                method: "POST",
-                headers: {'Content-Type': 'application/json'},
-                credentials: 'include',
-                body: JSON.stringify({
-                    query: mutation,
-                    variables: variables,
-                })
-            });
-
-            const result = await response.json();
-
-            if (result.errors){
-                console.error('GraphQL error', result.errors);
-                throw new Error(result.errors[0].message);
-            }
-
-            return result.data;
-        } catch (error) {
-            console.log('Error with Mutation:', error);
-            throw error;
-        } finally {
-            isLoading = false;
-        }
-    }
-
-    async function toggleLike(){
-        if(!$eventPickedForDetailView || isLoading) return; //should not be possible anyway, but just in case
-
-        const eventId = $eventPickedForDetailView.id;
-        const wasLiked = isLiked;
-        isLiked = !isLiked;
-        localLikeCount += isLiked ? 1 : -1; //add or subtract depending on if event is liked
-
-        try {
-            if(isLiked){
-                const mutation = `
-                    mutation LikeEvent($id: ID!) {
-                        likeEvent(id: $id)
-                    }
-                `;
-                await executeMutation(mutation, {id: eventId});
-            } else {
-                const mutation = `
-                    mutation RemoveLikeEvent($id: ID!) {
-                        removeLikeEvent(id: $id)
-                    }
-                `;
-                await executeMutation(mutation, {id: eventId});
-            }
-        } catch (error) {
-            isLiked = wasLiked; // revert to before failed like attempt
-            localLikeCount += wasLiked ? 1 : -1;
-            alert('Failed to update like status. Please try again.')
-        }
-    }
-
-    async function toggleJoin() {
-        if(!$eventPickedForDetailView || isLoading) return;
-
-        const eventId = $eventPickedForDetailView.id;
-        const wasJoined = isJoined;
-        isJoined = !isJoined;
-
-        try {
-            if (isJoined){
-                const mutation = `
-                    mutation AttendEvent($id: ID!) {
-                        attendEvent(id: $id)
-                    }
-                `;
-                await executeMutation(mutation, {id: eventId})
-            } else {
-                const mutation = `
-                    mutation LeaveEvent($id: ID!) {
-                        leaveEvent(id: $id)
-                    }
-                `;
-                await executeMutation(mutation, {id: eventId})
-            }
-        } catch (error){
-            isJoined = wasJoined;
-            if(error.message.includes('Authentication required')){
-                alert('Please log in to join/leave events')
-            } else {
-                alert('Failed to update attendance status. Please try again')
-            }
-        }
-    }
-
-
+    $: isLiked = eventActions?.isLiked;
+    $: isJoined = eventActions?.isJoined;
+    $: localLikeCount = eventActions?.localLikeCount;
+    $: isLoading = eventActions?.isLoading;
 </script>
 
 {#if $eventPickedForDetailView}
@@ -157,14 +60,14 @@
                     <div class="event-image-overlay-item">
                         <!-- disabled means you cant click on a button while that field is true -->
                         <button
-                                on:click={toggleLike}
-                                disabled={isLoading}
+                                on:click={eventActions.toggleLike}
+                                disabled={$isLoading}
                         >
                             <Heart
-                                    class="w-5 h-5 text-white {isLiked ? 'fill-current' : ''}"
+                                    class="w-5 h-5 text-white {$isLiked ? 'fill-current' : ''}"
                             />
                         </button>
-                        <span>{localLikeCount}</span>
+                        <span>{$localLikeCount}</span>
                     </div>
                     <div class="event-image-overlay-item">
                         <MessageCircle class="w-5 h-5 text-white" />
@@ -183,10 +86,10 @@
                 <p class="event-p"><strong>Description:</strong> {$eventPickedForDetailView.description}</p>
                 <button
                         class="sosp-button-secondary"
-                        on:click={toggleJoin}
-                        disabled={isLoading}
+                        on:click={eventActions.toggleJoin}
+                        disabled={$isLoading}
                 >
-                    {#if isJoined}
+                    {#if $isJoined}
                         Leave
                     {:else}
                         Join

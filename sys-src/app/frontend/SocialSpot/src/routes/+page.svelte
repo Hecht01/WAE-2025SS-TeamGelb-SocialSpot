@@ -128,9 +128,9 @@
                 headers: {
                     'Content-Type': 'application/json'
                 },
+                credentials: 'include',
                 body: JSON.stringify({ query })
             });
-
             const json = await res.json();
             events = json.data.eventList;
             console.log(events)
