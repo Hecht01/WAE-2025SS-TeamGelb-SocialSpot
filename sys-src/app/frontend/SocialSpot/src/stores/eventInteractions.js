@@ -1,4 +1,5 @@
 import {writable} from 'svelte/store';
+import {eventStoreActions} from "./EventStore.js";
 
 const GRAPHQL_URL = `${import.meta.env.VITE_API_URL || 'http://localhost:4000'}/graphql`;
 
@@ -30,6 +31,7 @@ async function executeMutation(mutation, variables = {}){
 
 /**
  * @param {any} event
+ * @param {Function|null} onUpdate
  */
 export function createEventActions(event, onUpdate = null){
     // reactive stores for frontend
@@ -48,6 +50,7 @@ export function createEventActions(event, onUpdate = null){
         const wasLiked = currentLiked;
         const newLikedState = !currentLiked;
 
+        // update local
         isLiked.set(newLikedState);
         localLikeCount.update(count => count + (newLikedState ? 1: -1));
         isLoading.set(true);
@@ -69,6 +72,14 @@ export function createEventActions(event, onUpdate = null){
                 await executeMutation(mutation, {id: event.id})
             }
 
+        // update global store
+        const currentLikeCount = await new Promise(resolve => {
+            localLikeCount.subscribe(value => {
+                resolve(value);
+            })();
+        });
+
+        eventStoreActions.updateEventLike(event.id, newLikedState, currentLikeCount);
 
         } catch (error) {
             isLiked.set(wasLiked);
@@ -108,6 +119,9 @@ export function createEventActions(event, onUpdate = null){
                 `;
                 await executeMutation(mutation, {id: event.id})
             }
+
+        // update global store
+        eventStoreActions.updateEventJoin(event.id, newJoinedState);
 
         } catch (error) {
             isJoined.set(wasJoined);

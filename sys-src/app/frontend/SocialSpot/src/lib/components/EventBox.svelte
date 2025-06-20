@@ -3,6 +3,8 @@
     import {Heart, MessageCircle} from 'lucide-svelte'; // lucide is a package for icons, which are customizable with color, size, stroke width etc.
     import {isOverlayOpen, eventPickedForDetailView} from "../../stores/OverlayStore"; // used for detail view overlay
     import {createEventActions} from "../../stores/eventInteractions";
+    import { eventUpdates} from "../../stores/EventStore";
+    import {onMount} from "svelte";
 
     export let event: EventData;
 
@@ -14,6 +16,20 @@
     $: isJoined = eventActions?.isJoined;
     $: localLikeCount = eventActions?.localLikeCount;
     $: isLoading = eventActions?.isLoading;
+
+    onMount(() => {
+        const unsubscribe = eventUpdates.subscribe(update => {
+            if(update && update.eventId === event.id) {
+                if (update.type === 'like') {
+                    eventActions.isLiked.set(update.isLiked);
+                    eventActions.localLikeCount.set(update.likeCount);
+                } else if (update.type === 'join') {
+                    eventActions.isJoined.set(update.isJoined);
+                }
+            }
+        });
+        return unsubscribe;
+    })
 
     function openDetailView() {
         isOverlayOpen.set(true);
