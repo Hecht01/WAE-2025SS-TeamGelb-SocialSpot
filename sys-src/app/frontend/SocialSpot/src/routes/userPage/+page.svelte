@@ -4,24 +4,37 @@
     import type {EventData} from "$lib/types.js";
 
     const GRAPHQL_URL = `${import.meta.env.VITE_API_URL || 'http://localhost:4000'}/graphql`;
-    let createdEvents = [];
-    let loadingEvents = null;
+    let createdEvents: EventData[] = [];
+    let loadingEvents: boolean|null = null;
     let errorEvents = null;
 
     const query = `
     query {
       getCreatedEvents {
         id
+        author {
+          user_uri
+          name
+          email
+          profilePicture
+        }
         title
         description
         date
         time
         location
+        address
         type
+        thumbnail
         latitude
         longitude
-        thumbnail
-        author {
+        likeCount
+        likedByMe
+        attendCount
+        attendedByMe
+        commentCount
+        attendees {
+          user_uri
           name
           email
           profilePicture

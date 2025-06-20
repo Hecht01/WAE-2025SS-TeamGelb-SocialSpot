@@ -222,7 +222,7 @@ export const resolvers = {
         },
 
         attendEvent: async (_, args, context) => {
-            const { eventId } = args;
+            const { id: eventId } = args;
             const { req } = context;
 
             if (!req.session || !req.session.user) {
@@ -243,7 +243,7 @@ export const resolvers = {
         },
 
         leaveEvent: async (_, args, context) => {
-            const { eventId } = args;
+            const { id: eventId } = args;
             const { req } = context;
 
             if (!req.session || !req.session.user) {
@@ -262,7 +262,7 @@ export const resolvers = {
         },
 
         likeEvent: async (_, args, context) => {
-            const { eventId } = args;
+            const { id: eventId } = args;
             const { req } = context;
 
             if (!req.session || !req.session.user) {
@@ -283,7 +283,7 @@ export const resolvers = {
         },
 
         removeLikeEvent: async (_, args, context) => {
-            const { eventId } = args;
+            const { id: eventId } = args;
             const { req } = context;
 
             if (!req.session || !req.session.user) {
@@ -315,7 +315,7 @@ export const resolvers = {
                 INSERT INTO event_comment (event_id, user_id, content)
                 VALUES ($1, $2, $3)
             `;
-            const result = await pool.query(deleteQuery, [eventId, user.user_id, comment]);
+            const result = await pool.query(insertQuery, [eventId, user.user_id, comment]);
             return true;
         }
     }

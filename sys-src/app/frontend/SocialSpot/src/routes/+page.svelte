@@ -1,6 +1,7 @@
-<script>
+<script lang="ts">
     import EventFeed from '$lib/components/EventFeed.svelte';
     import { onMount } from 'svelte';
+    import type {EventData} from "$lib/types.js";
 
     const GRAPHQL_URL = `${import.meta.env.VITE_API_URL || 'http://localhost:4000'}/graphql`;
 
@@ -81,24 +82,37 @@
         }
     ]*/
 
-    let events = [];
-    let loading = true;
+    let events: EventData[] = [];
+    let loading: boolean|null = true;
     let error = null;
 
     const query = `
     query {
       eventList {
         id
+        author {
+          user_uri
+          name
+          email
+          profilePicture
+        }
         title
         description
         date
         time
         location
+        address
         type
+        thumbnail
         latitude
         longitude
-        thumbnail
-        author {
+        likeCount
+        likedByMe
+        attendCount
+        attendedByMe
+        commentCount
+        attendees {
+          user_uri
           name
           email
           profilePicture
