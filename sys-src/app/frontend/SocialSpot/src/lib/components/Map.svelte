@@ -24,14 +24,17 @@
     query {
       eventList {
         id
-        title
-        latitude
-        longitude
-        description
-        date
-        time
-        location
-        thumbnail
+      title
+      latitude
+      longitude
+      description
+      date
+      time
+      location
+      address
+      likeCount
+      commentCount
+      thumbnail
       }
     }
   `;
