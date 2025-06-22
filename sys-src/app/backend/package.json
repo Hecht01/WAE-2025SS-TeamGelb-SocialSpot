@@ -8,7 +8,7 @@
     "compile": "tsc",
     "dev": "nodemon src/index",
     "start": "npm run compile && nodemon ./dist/index.js && nodemon src/index",
-    "test": "vitest"
+    "test": "vitest --coverage"
   },
   "author": "",
   "license": "ISC",

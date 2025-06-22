@@ -117,7 +117,50 @@ export const resolvers = {
                 district: row.district,
                 state: row.state
             }));
-        }
+        },
+        user: async (_, args) => {
+            const query = `SELECT * FROM app_user WHERE user_uri = $1`;
+            const result = await pool.query(query, [args.user_uri]);
+
+            if (result.rows.length === 0) {
+                return null;
+            }
+
+            const user = result.rows[0];
+            return {
+                user_uri: user.user_uri,
+                name: user.username,
+                email: user.email,
+                profilePicture: user.profile_picture_url
+            };
+        },
+        event: async (_, args) => {
+            const { title } = args;
+            const query = `
+                SELECT e.event_id as id,
+                       e.title,
+                       e.address,
+                       e.description,
+                       e.event_date,
+                       u.username as author,
+                       c.name as city_name
+                FROM event e
+                         INNER JOIN app_user u ON e.creator_id = u.user_id
+                         LEFT JOIN city c ON e.city_id = c.city_id
+                WHERE lower(e.title) LIKE lower($1)
+            `;
+
+            const result = await pool.query(query, [`%${title}%`]);
+            return result.rows.map(row => ({
+                id: row.id,
+                title: row.title,
+                address: row.address,
+                date: row.event_date.toLocaleDateString('sv-SE'),
+                author: row.author,
+                description: row.description,
+                city: row.city_name,
+            }));
+        },
     },
 
     Mutation: {
@@ -138,9 +181,9 @@ export const resolvers = {
             if(imageUrl) {
                 const checkQuery = `
                     SELECT true
-                      FROM uploaded_images
-                     WHERE image_url = $1
-                       AND user_id = $2
+                    FROM uploaded_images
+                    WHERE image_url = $1
+                      AND user_id = $2
                 `;
                 const checkResult = await pool.query(checkQuery, [imageUrl, user.user_id]);
                 console.log(checkResult);
