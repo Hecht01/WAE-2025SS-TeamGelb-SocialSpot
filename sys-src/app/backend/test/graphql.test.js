@@ -1,9 +1,9 @@
 import { describe, it, beforeAll, afterAll, beforeEach, expect, vi } from 'vitest';
 import { ApolloServer } from '@apollo/server';
-import typeDefs from '../src/schema.js';
-import resolvers from '../src/resolvers.js';
-import { Pool } from 'pg';
+import { typeDefs } from '../src/schema.js';
+import { resolvers } from '../src/resolvers.js';
 import axios from 'axios';
+import { gql } from "graphql-tag";
 
 // Mock axios for geocoding tests
 vi.mock('axios');
@@ -14,62 +14,31 @@ if (process.env.NODE_ENV !== 'production') {
     require('dotenv').config({ path: '../../.env' });
 }
 
-const pool = new Pool({
-    user: process.env.PG_USER,
-    host: process.env.PG_HOST,
-    database: process.env.POSTGRES_DB,
-    password: process.env.PG_PASSWORD,
-    port: process.env.PG_PORT,
-});
+import { pool } from '../src/database.js';
 
 let server;
-let creatorId, cityId, categoryId;
-
-const CREATE_EVENT = `...`; // Your full CREATE_EVENT query here
-const GET_EVENTS = `...`;   // Your full GET_EVENTS query here
-const GET_USERS = `...`;    // Your full GET_USERS query here
+let creatorId, cityId;
 
 beforeAll(async () => {
-    await pool.query(`TRUNCATE event, app_user, city, category RESTART IDENTITY CASCADE`);
+    await pool.query(`TRUNCATE event, app_user, city RESTART IDENTITY CASCADE`);
 
     const userRes = await pool.query(`
-        INSERT INTO app_user (username, email, password_hash, user_uri, profile_picture_url)
-        VALUES ('TestUser', 'test@example.com', 'hashed', 'test-user-uri', 'https://example.com/pic.jpg')
+        INSERT INTO app_user (username, email, google_auth_id, profile_picture_url)
+        VALUES ('TestUser', 'test@example.com', 'test-user-uri', 'https://example.com/pic.jpg')
             RETURNING user_id
     `);
     creatorId = userRes.rows[0].user_id;
 
     const cityRes = await pool.query(`
-        INSERT INTO city (country, postal_code, name, latitude, longitude, state)
-        VALUES ('DE', 10115, 'Berlin', 52.5200, 13.4050, 'Berlin')
+        INSERT INTO city (country, postal_code, name, latitude, longitude, state, district)
+        VALUES ('DE', 10115, 'Berlin', 52.5200, 13.4050, 'Berlin', 'Berlin')
             RETURNING city_id
     `);
     cityId = cityRes.rows[0].city_id;
 
-    const catRes = await pool.query(`
-        INSERT INTO category (name, description)
-        VALUES ('Tech', 'Technology events')
-            RETURNING category_id
-    `);
-    categoryId = catRes.rows[0].category_id;
-
     server = new ApolloServer({
         typeDefs,
         resolvers,
-        context: async () => ({
-            pool,
-            req: {
-                session: {
-                    user: {
-                        user_id: creatorId,
-                        username: 'TestUser',
-                        email: 'test@example.com',
-                        user_uri: 'test-user-uri',
-                        profile_picture_url: 'https://example.com/pic.jpg'
-                    }
-                }
-            }
-        })
     });
     await server.start();
 });
@@ -88,76 +57,49 @@ describe('GraphQL API with Geocoding (Vitest)', () => {
         vi.clearAllMocks();
     });
 
-    it('creates an event with provided coordinates', async () => {
-        const variables = {
-            title: "Test Event with Coordinates",
-            description: "This is a test event with predefined coordinates",
-            date: "2025-07-01",
-            time: "18:00",
-            cityId,
-            address: "Test St 123",
-            latitude: 52.52,
-            longitude: 13.40,
-            categoryId,
-            imageUrl: "https://example.com/image.jpg"
-        };
-
-        const contextValue = {
-            pool,
-            req: {
-                session: {
-                    user: {
-                        user_id: creatorId,
-                        username: 'TestUser',
-                        email: 'test@example.com',
-                        user_uri: 'test-user-uri',
-                        profile_picture_url: 'https://example.com/pic.jpg'
-                    }
-                }
-            }
-        };
-
-        const res = await server.executeOperation(
-            { query: CREATE_EVENT, variables },
-            { contextValue }
-        );
-
-        expect(res.body.singleResult.errors).toBeUndefined();
-        expect(res.body.singleResult.data.createEvent.title).toBe("Test Event with Coordinates");
-        expect(res.body.singleResult.data.createEvent.latitude).toBe(52.52);
-        expect(res.body.singleResult.data.createEvent.longitude).toBe(13.40);
-        expect(res.body.singleResult.data.createEvent.author.name).toBe("TestUser");
-
-        expect(mockedAxios.get).not.toHaveBeenCalled();
-    });
-
-    it('creates an event with geocoding when coordinates are not provided', async () => {
+    it('creates an event with geocoding', async () => {
+        // Mock successful geocoding response
         const mockGeocodeResponse = {
             data: [{
-                lat: '48.8566969',
-                lon: '2.3514616',
-                display_name: 'Paris, France',
-                address: {
-                    city: 'Paris',
-                    country: 'France'
-                }
+                lat: '52.5000',
+                lon: '13.4000',
+                display_name: 'Berlin, Germany'
             }]
         };
         mockedAxios.get.mockResolvedValue(mockGeocodeResponse);
 
+        const CREATE_EVENT = gql`
+            mutation CreateEvent(
+                $title: String!,
+                $description: String!,
+                $date: String!,
+                $time: String!,
+                $cityId: Int!,
+                $address: String,
+                $imageUrl: String
+            ) {
+                createEvent(
+                    title: $title,
+                    description: $description,
+                    date: $date,
+                    time: $time,
+                    cityId: $cityId,
+                    address: $address,
+                    imageUrl: $imageUrl
+                )
+            }
+        `;
+
         const variables = {
             title: "Test Event with Geocoding",
-            description: "This event will be geocoded",
-            date: "2025-07-15",
-            time: "19:00",
-            address: "Champs-Élysées",
-            city: "Paris",
-            country: "France",
-            categoryId
+            description: "This is a test event",
+            date: "2025-07-01",
+            time: "18:00",
+            cityId: cityId,
+            address: "Test St 123"
         };
 
-        const contextValue = {
-            pool,
+        const mockContext = {
             req: {
                 session: {
                     user: {
@@ -171,36 +113,69 @@ describe('GraphQL API with Geocoding (Vitest)', () => {
             }
         };
 
-        const res = await server.executeOperation(
-            { query: CREATE_EVENT, variables },
-            { contextValue }
+        const response = await server.executeOperation(
+            {
+                query: CREATE_EVENT,
+                variables
+            },
+            {
+                contextValue: mockContext
+            }
         );
 
-        expect(res.body.singleResult.errors).toBeUndefined();
-        expect(res.body.singleResult.data.createEvent.title).toBe("Test Event with Geocoding");
-        expect(res.body.singleResult.data.createEvent.latitude).toBe(48.8566969);
-        expect(res.body.singleResult.data.createEvent.longitude).toBe(2.3514616);
+        expect(response.body.kind).toBe('single');
+        expect(response.body.singleResult.errors).toBeUndefined();
+        expect(response.body.singleResult.data.createEvent).toBeDefined();
 
-        expect(mockedAxios.get).toHaveBeenCalled();
+        // Verify that geocoding was called
+        expect(mockedAxios.get).toHaveBeenCalledWith(
+            'https://nominatim.openstreetmap.org/search',
+            expect.objectContaining({
+                params: expect.objectContaining({
+                    q: expect.stringContaining('Test St 123'),
+                    format: 'json'
+                })
+            })
+        );
     });
 
     it('handles geocoding failure gracefully', async () => {
         const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+        const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
+        // Mock geocoding failure
         mockedAxios.get.mockRejectedValue(new Error('Network error'));
+
+        const CREATE_EVENT = gql`
+            mutation CreateEvent(
+                $title: String!,
+                $description: String!,
+                $date: String!,
+                $time: String!,
+                $cityId: Int!,
+                $address: String
+            ) {
+                createEvent(
+                    title: $title,
+                    description: $description,
+                    date: $date,
+                    time: $time,
+                    cityId: $cityId,
+                    address: $address
+                )
+            }
+        `;
 
         const variables = {
             title: "Test Event with Failed Geocoding",
             description: "This event will fail geocoding",
             date: "2025-08-15",
             time: "21:00",
-            address: "Invalid Address",
-            city: "NonexistentCity",
-            categoryId
+            cityId: cityId,
+            address: "Invalid Address"
         };
 
-        const contextValue = {
-            pool,
+        const mockContext = {
             req: {
                 session: {
                     user: {
@@ -214,23 +189,122 @@ describe('GraphQL API with Geocoding (Vitest)', () => {
             }
         };
 
-        const res = await server.executeOperation(
-            { query: CREATE_EVENT, variables },
-            { contextValue }
+        const response = await server.executeOperation(
+            {
+                query: CREATE_EVENT,
+                variables
+            },
+            {
+                contextValue: mockContext
+            }
         );
 
-        expect(res.body.singleResult.errors).toBeUndefined();
-        expect(res.body.singleResult.data.createEvent.latitude).toBeNull();
-        expect(res.body.singleResult.data.createEvent.longitude).toBeNull();
-
-        expect(consoleWarnSpy).toHaveBeenCalledWith('Geocoding failed:', expect.stringContaining('Network error'));
+        expect(response.body.kind).toBe('single');
+        expect(response.body.singleResult.errors).toBeDefined();
+        expect(response.body.singleResult.errors[0].message).toContain('Invalid Address provided');
 
         consoleWarnSpy.mockRestore();
+        consoleErrorSpy.mockRestore();
+    });
+
+    it('fetches event list', async () => {
+        // First create an event to fetch
+        await pool.query(`
+            INSERT INTO event (title, description, event_date, event_time, creator_id, city_id, address, latitude, longitude)
+            VALUES ('Sample Event', 'Sample Description', '2025-07-01', '18:00', $1, $2, 'Sample Address', 52.5, 13.4)
+        `, [creatorId, cityId]);
+
+        const GET_EVENTS = gql`
+            query GetEvents {
+                eventList {
+                    id
+                    title
+                    description
+                    date
+                    time
+                    location
+                    address
+                    author {
+                        name
+                        email
+                    }
+                    likeCount
+                    attendCount
+                    commentCount
+                }
+            }
+        `;
+
+        const mockContext = {
+            req: {
+                session: {
+                    user: {
+                        user_id: creatorId,
+                        username: 'TestUser',
+                        email: 'test@example.com'
+                    }
+                }
+            }
+        };
+
+        const response = await server.executeOperation(
+            {
+                query: GET_EVENTS
+            },
+            {
+                contextValue: mockContext
+            }
+        );
+
+        expect(response.body.kind).toBe('single');
+        expect(response.body.singleResult.data.eventList).toBeDefined();
     });
 
     it('fetches users', async () => {
-        const contextValue = {
-            pool,
+        const GET_USERS = gql`
+            query GetUsers {
+                userList {
+                    name
+                    email
+                    profilePicture
+                }
+            }
+        `;
+
+        const response = await server.executeOperation({
+            query: GET_USERS
+        });
+
+        expect(response.body.kind).toBe('single');
+        expect(response.body.singleResult.errors).toBeUndefined();
+        expect(response.body.singleResult.data.userList).toBeDefined();
+        expect(response.body.singleResult.data.userList.length).toBeGreaterThan(0);
+        expect(response.body.singleResult.data.userList[0].name).toBe("TestUser");
+        expect(response.body.singleResult.data.userList[0].email).toBe("test@example.com");
+    });
+
+    it('requires authentication for myUser query', async () => {
+        const GET_MY_USER = gql`
+            query GetMyUser {
+                myUser {
+                    user_uri
+                    name
+                    email
+                    profilePicture
+                }
+            }
+        `;
+
+        // Test without authentication
+        const responseUnauth = await server.executeOperation({
+            query: GET_MY_USER
+        });
+
+        expect(responseUnauth.body.kind).toBe('single');
+        expect(responseUnauth.body.singleResult.errors).toBeDefined();
+
+        // Test with authentication
+        const mockContext = {
             req: {
                 session: {
                     user: {
@@ -244,12 +318,42 @@ describe('GraphQL API with Geocoding (Vitest)', () => {
             }
         };
 
-        const res = await server.executeOperation(
-            { query: GET_USERS },
-            { contextValue }
+        const responseAuth = await server.executeOperation(
+            {
+                query: GET_MY_USER
+            },
+            {
+                contextValue: mockContext
+            }
         );
 
-        expect(res.body.singleResult.errors).toBeUndefined();
-        expect(res.body.singleResult.data.userList[0].name).toBe("TestUser");
+        expect(responseAuth.body.kind).toBe('single');
+        expect(responseAuth.body.singleResult.errors).toBeUndefined();
+        expect(responseAuth.body.singleResult.data.myUser.name).toBe('TestUser');
+        expect(responseAuth.body.singleResult.data.myUser.email).toBe('test@example.com');
+    });
+
+    it('fetches cities with name filter', async () => {
+        const GET_CITIES = gql`
+            query GetCities($nameLike: String) {
+                getCities(nameLike: $nameLike) {
+                    id
+                    name
+                    district
+                    state
+                }
+            }
+        `;
+
+        const response = await server.executeOperation({
+            query: GET_CITIES,
+            variables: { nameLike: "Ber" }
+        });
+
+        expect(response.body.kind).toBe('single');
+        expect(response.body.singleResult.errors).toBeUndefined();
+        expect(response.body.singleResult.data.getCities).toBeDefined();
+        expect(response.body.singleResult.data.getCities.length).toBeGreaterThan(0);
+        expect(response.body.singleResult.data.getCities[0].name).toBe("Berlin");
     });
 });
