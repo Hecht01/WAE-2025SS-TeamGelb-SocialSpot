@@ -110,9 +110,9 @@ describe('EventFeed.svelte', () => {
         const { container } = render(EventFeed, { props: { events: mockEvents } });
 
         const gridContainer = container.querySelector('.grid');
-        expect(gridContainer).toHaveClass('gap-6'); // Gap between items
-        expect(gridContainer).toHaveClass('p-4'); // Padding
-        expect(gridContainer).toHaveClass('max-w-6xl'); // Max width
-        expect(gridContainer).toHaveClass('mx-auto'); // Center horizontally
+        expect(gridContainer).toHaveClass('gap-6');
+        expect(gridContainer).toHaveClass('p-4');
+        expect(gridContainer).toHaveClass('max-w-6xl');
+        expect(gridContainer).toHaveClass('mx-auto');
     });
 });

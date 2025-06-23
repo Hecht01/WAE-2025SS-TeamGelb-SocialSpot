@@ -92,7 +92,6 @@ describe('EventBox.svelte', () => {
 
         await fireEvent.click(eventBox!);
 
-        // Get the mocked functions from the imported modules
         const { isOverlayOpen: mockIsOverlayOpen, eventPickedForDetailView: mockEventPickedForDetailView } = await import('../stores/OverlayStore');
 
         expect(mockIsOverlayOpen.set).toHaveBeenCalledWith(true);
@@ -107,7 +106,6 @@ describe('EventBox.svelte', () => {
 
         await fireEvent.keyDown(eventBox!, { key: 'Enter' });
 
-        // Get the mocked functions from the imported modules
         const { isOverlayOpen: mockIsOverlayOpen, eventPickedForDetailView: mockEventPickedForDetailView } = await import('../stores/OverlayStore');
 
         expect(mockIsOverlayOpen.set).toHaveBeenCalledWith(true);
@@ -122,7 +120,6 @@ describe('EventBox.svelte', () => {
 
         await fireEvent.keyDown(eventBox!, { key: ' ' });
 
-        // Get the mocked functions from the imported modules
         const { isOverlayOpen: mockIsOverlayOpen, eventPickedForDetailView: mockEventPickedForDetailView } = await import('../stores/OverlayStore');
 
         expect(mockIsOverlayOpen.set).toHaveBeenCalledWith(true);
@@ -142,7 +139,6 @@ describe('EventBox.svelte', () => {
         };
         const { container } = render(EventBox, { props: { event: eventWithoutTime } });
 
-        // Should not crash and should render without time
         expect(container).toBeInTheDocument();
     });
 
