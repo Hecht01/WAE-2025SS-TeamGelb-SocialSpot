@@ -14,7 +14,7 @@ export const pool = new Pool({
     port: process.env.PG_PORT,
 });
 
-export async function getEvents(userId, fetchAll) {
+export async function getEvents(userId, createdByAnyone, eventId) {
     const query = `
         SELECT  e.event_id,
                 e.title,
@@ -44,7 +44,8 @@ export async function getEvents(userId, fetchAll) {
                 LEFT JOIN event_comment ec ON e.event_id = ec.event_id
                 LEFT JOIN event_attendee ea_me ON e.event_id = ea_me.event_id AND ea_me.user_id = $1
                 LEFT JOIN event_like el_me ON e.event_id = el_me.event_id AND el_me.user_id = $1
-        WHERE $2 = True or e.creator_id = $1
+        WHERE ($2 = True or e.creator_id = $1)
+          AND (e.event_id = $3 or $3 = -1)
         GROUP BY e.event_id,
                 e.title,
                 e.description,
@@ -63,8 +64,7 @@ export async function getEvents(userId, fetchAll) {
                 ea_me.user_id,
                 el_me.user_id;
     `;
-
-    const res = await pool.query(query, [userId, fetchAll]);
+    const res = await pool.query(query, [userId, createdByAnyone, eventId]);
 
     const formatDate = (date) => {
         return date.toLocaleDateString('sv-SE'); //for filter in map
@@ -85,7 +85,7 @@ export async function getEvents(userId, fetchAll) {
         author: {
             user_uri: row.user_uri,
             name: row.username,
-            email: row.email,
+            email: 'HIDDEN',
             profilePicture: row.profile_picture_url,
         },
         likeCount: row.like_count,
@@ -94,6 +94,36 @@ export async function getEvents(userId, fetchAll) {
         attendedByMe: row.attended_by_me,
         commentCount: row.comment_count,
         attendees: [] // Can be extended later
+    }));
+}
+
+export async function getComments(eventId, userId) {
+    const query = `
+        SELECT c.comment_id,
+               c.content,
+               c.gen_date,
+               CASE WHEN c.user_id = $2 THEN true ELSE false END AS commented_by_me,
+               u.user_uri,
+               u.username,
+               u.profile_picture_url
+          FROM event_comment c
+               INNER JOIN app_user u ON c.user_id = u.user_id
+         WHERE (c.event_id = $1)
+         ORDER BY c.gen_date
+    `;
+    const res = await pool.query(query, [eventId, userId]);
+
+    return res.rows.map(row => ({
+        id: row.comment_id,
+        content: row.content,
+        commentedByMe: row.commented_by_me,
+        date: row.gen_date,
+        author: {
+            user_uri: row.user_uri,
+            name: row.username,
+            email: 'HIDDEN',
+            profilePicture: row.profile_picture_url,
+        },
     }));
 }
 

@@ -16,7 +16,7 @@ export const typeDefs = gql`
         state: String!
     }
 
-    type Event{
+    type Event {
         id: ID!
         author:  User!
         title: String!
@@ -34,13 +34,25 @@ export const typeDefs = gql`
         attendCount: Int!
         attendedByMe: Boolean!
         commentCount: Int!
+        comments: [Comment]
         attendees: [User!]
+    }
+    
+    type Comment {
+        id: ID!
+        content: String
+        commentedByMe: Boolean!
+        date: String!
+        author: User!
     }
 
     type Query {
         event: [Event!]
         eventList: [Event!]
         getCreatedEvents: [Event!]
+        getEventDetails(
+            eventId: ID!
+        ): Event!
         user: User!
         myUser: User
         userList: [User!]

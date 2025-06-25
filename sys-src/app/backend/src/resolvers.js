@@ -1,5 +1,5 @@
 import axios from 'axios';
-import {pool, getEvents} from './database.js';
+import {pool, getEvents, getComments} from './database.js';
 import {AuthenticationError, UserInputError} from "apollo-server-express";
 
 // Geocoding helper function
@@ -54,7 +54,7 @@ export const resolvers = {
                 userId = req.session.user.user_id;
             }
 
-            return getEvents(userId, true);
+            return getEvents(userId, true, -1);
         },
 
         userList: async () => {
@@ -92,7 +92,32 @@ export const resolvers = {
             }
             userId = req.session.user.user_id;
 
-            return getEvents(userId, false);
+            return getEvents(userId, false, -1);
+        },
+
+        getEventDetails: async (_, args, context) => {
+            const { eventId } = args;
+            const { req } = context;
+
+            let userId = -1; // Default to -1 for unauthenticated users
+            if (req.session && req.session.user) {
+                userId = req.session.user.user_id;
+            }
+
+            try {
+                const [eventDetails, comments] = await Promise.all([
+                    getEvents(userId, true, eventId),
+                    getComments(eventId, userId)
+                ]);
+
+                return {
+                    ...eventDetails[0],
+                    comments: comments
+                };
+            } catch (error) {
+                console.error('Error fetching event details:', error);
+                throw new Error('Failed to fetch event details');
+            }
         },
 
         getCities: async (_, args) => {
@@ -186,7 +211,6 @@ export const resolvers = {
                       AND user_id = $2
                 `;
                 const checkResult = await pool.query(checkQuery, [imageUrl, user.user_id]);
-                console.log(checkResult);
             }
 
             let latitude = null;
