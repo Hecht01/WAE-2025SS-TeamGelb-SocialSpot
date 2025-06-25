@@ -384,6 +384,30 @@ export const resolvers = {
             `;
             const result = await pool.query(insertQuery, [eventId, user.user_id, comment]);
             return true;
+        },
+
+        deleteComment: async (_, args, context) => {
+            const { commentId } = args;
+            const { req } = context;
+
+            if (!req.session || !req.session.user) {
+                throw new AuthenticationError('Authentication required. Please log in.');
+            }
+            const user = req.session.user;
+
+            const deleteQuery = `
+                WITH deleted_rows AS (
+                        DELETE FROM event_comment
+                    WHERE comment_id = $1 AND user_id = $2
+                    RETURNING *
+                )
+                SELECT COUNT(*) FROM deleted_rows;
+            `;
+            const result = await pool.query(deleteQuery, [commentId, user.user_id]);
+
+            const deletedCount = parseInt(result.rows[0].count);
+
+            return deletedCount > 0;
         }
     }
 };

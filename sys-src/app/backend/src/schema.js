@@ -80,5 +80,6 @@ export const typeDefs = gql`
             id: ID!
             comment: String!
         ): Boolean!
+        deleteComment(id: ID!): Boolean!
     }
 `;
