@@ -10,6 +10,14 @@
   import { request, gql } from 'graphql-request';
 	import EventDetailView from './EventDetailView.svelte';
 
+  import markerIcon from 'leaflet/dist/images/marker-icon.png';
+  import markerShadow from 'leaflet/dist/images/marker-shadow.png';
+
+  L.Icon.Default.mergeOptions({
+  iconUrl: markerIcon,
+  shadowUrl: markerShadow
+  });
+  
   export let filters: { category: string; date: string; city: string; title: string; };
 
   let mapContainer: HTMLDivElement;
