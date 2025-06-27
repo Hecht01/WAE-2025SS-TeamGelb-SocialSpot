@@ -66,7 +66,12 @@ vi.mock('leaflet', () => ({
     return newMarker;
   }),
   tileLayer: vi.fn(() => mockTileLayer),
-  markerClusterGroup: vi.fn(() => mockMarkerClusterGroup)
+  markerClusterGroup: vi.fn(() => mockMarkerClusterGroup),
+  Icon: {
+    Default: {
+      mergeOptions: vi.fn()
+    }
+  }
 }));
 
 vi.mock('leaflet.markercluster', () => ({
