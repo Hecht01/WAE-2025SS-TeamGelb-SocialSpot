@@ -70,7 +70,7 @@
                 <MessageCircle class="w-5 h-5 text-white" />
                 <span>{event.commentCount}</span>
             </div>
-        </div> -
+        </div>
     </div>
 
     <div class="event-infos">

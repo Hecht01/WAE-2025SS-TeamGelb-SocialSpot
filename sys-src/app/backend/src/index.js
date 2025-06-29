@@ -45,7 +45,15 @@ const upload = multer({ storage: storage });
 
 const corsOptions = {
     origin: [
-        process.env.FRONTEND_URL || 'http://localhost:3000',
+        ...(process.env.FRONTEND_URL
+                ? [
+                    process.env.FRONTEND_URL,
+                    process.env.FRONTEND_URL.includes('://www.')
+                        ? process.env.FRONTEND_URL.replace('://www.', '://')
+                        : process.env.FRONTEND_URL.replace('://', '://www.')
+                ]
+                : ['http://localhost:3000']
+        ),
         'https://studio.apollographql.com'
     ],
     credentials: true,
@@ -138,24 +146,6 @@ try {
     console.error('Schema error:', error);
 }
 
-app.get('/api', (req, res) => {
-    console.log(req.session.id);
-    if (req.session.user) {
-        res.send(`
-      <h1>Welcome ${req.session.user.username}</h1>
-      <img src="${req.session.user.profile_picture_url}" alt="Profile Picture" style="width:100px;border-radius:50%;">
-      <p>Email: ${req.session.user.email}</p>
-      <p><a href="/graphql">GraphQL Playground</a></p>
-      <a href="/api/logout">Logout</a>
-    `);
-    } else {
-        res.send(`
-      <h1>Welcome to OAuth Demo</h1>
-      <a href="/api/auth-google">Login with Google</a>
-    `);
-    }
-});
-
 app.get('/api/auth-google', async (req, res) => {
     const codeVerifier = openid.randomPKCECodeVerifier()
     const codeChallenge = await openid.calculatePKCECodeChallenge(codeVerifier)
@@ -176,13 +166,11 @@ app.get('/api/auth-google', async (req, res) => {
     req.session.expectedState = state;
 
     let redirectTo = openid.buildAuthorizationUrl(config, parameters)
-    console.log('redirecting to', redirectTo.href)
     res.redirect(redirectTo.href);
 });
 
 app.get('/api/auth/callback', async (req, res) => {
     try {
-        console.log(`try: ${process.env.BACKEND_URL}${req.url}`)
         let tokens = await openid.authorizationCodeGrant(
             config,
             new URL(`${process.env.BACKEND_URL}${req.url}`),
@@ -190,7 +178,6 @@ app.get('/api/auth/callback', async (req, res) => {
                 expectedState: req.session.expectedState,
             },
         )
-        console.log('Token Endpoint Response', tokens)
 
         req.session.tokens = {
             access_token: tokens.access_token,
@@ -208,13 +195,11 @@ app.get('/api/auth/callback', async (req, res) => {
             }
             const data = await response.json();
 
-            console.log('data', data);
             const userData = await upsertUserGoogle(data);
 
             //TODO: handle new user..?
             if(userData.success) {
                 req.session.user = userData.user;
-                console.log('success', req.session);
                 req.session.save();
             }
         }
@@ -259,7 +244,6 @@ app.post('/api/upload', requireAuth, upload.single('image'), async (req, res) =>
             req.file.filename
         ]);
 
-        console.log("File uploaded:", req.file);
         res.json({
             message: "Upload successful",
             filename: req.file.filename
@@ -281,8 +265,8 @@ app.post('/api/upload', requireAuth, upload.single('image'), async (req, res) =>
 
 const staticFilesPath = path.join(__dirname, '..', 'uploads');
 
-console.log(`[Express Static] Attempting to serve from: ${staticFilesPath}`);
-console.log(`[Express Static] Does this path exist? Check container filesystem.`); // Manual check needed
+console.log(`[Express Static] Attempting to serve images from: ${staticFilesPath}`);
+console.log(`[Express Static] Does this path exist? Check filesystem.`);
 
 app.use('/api/images', express.static(staticFilesPath));
 

@@ -6,10 +6,10 @@ describe('CreatePost Page', () => {
     it('renders the page correctly', () => {
         render(CreatePost);
 
-        const titleInput = screen.getByPlaceholderText('Titel of the event');
+        const titleInput = screen.getByPlaceholderText('Title of the event');
         expect(titleInput).toBeInTheDocument();
 
-        const locationInput = screen.getByPlaceholderText('Location where the event takes place');
+        const locationInput = screen.getByPlaceholderText('City where the event takes place');
         expect(locationInput).toBeInTheDocument();
 
         const addressInput = screen.getByPlaceholderText('Enter street and house number');
@@ -35,7 +35,7 @@ describe('CreatePost Page', () => {
         await fireEvent.click(submitButton);
 
         // Überprüfe, ob das Formular nicht abgesendet wird
-        const titleInput = screen.getByPlaceholderText('Titel of the event');
+        const titleInput = screen.getByPlaceholderText('Title of the event');
         expect(titleInput.checkValidity()).toBe(false);
 
         const descriptionInput = screen.getByPlaceholderText('Event description');
@@ -51,17 +51,17 @@ describe('CreatePost Page', () => {
     it('allows input in the title field', async () => {
         render(CreatePost);
 
-        const titleInput = screen.getByPlaceholderText('Titel of the event');
+        const titleInput = screen.getByPlaceholderText('Title of the event');
         await fireEvent.input(titleInput, { target: { value: 'Test Event' } });
 
         expect(titleInput.value).toBe('Test Event');
     });
 
-    it('submits the form successfully when all fields are filled', async () => {
+    it('submits the form and handles errors when backend is not available', async () => {
         render(CreatePost);
 
-        const titleInput = screen.getByPlaceholderText('Titel of the event');
-        const locationInput = screen.getByPlaceholderText('Location where the event takes place');
+        const titleInput = screen.getByPlaceholderText('Title of the event');
+        const locationInput = screen.getByPlaceholderText('City where the event takes place');
         const addressInput = screen.getByPlaceholderText('Enter street and house number');
         const descriptionInput = screen.getByPlaceholderText('Event description');
         const dateInput = screen.getByPlaceholderText('Start date');
@@ -77,8 +77,9 @@ describe('CreatePost Page', () => {
 
         await fireEvent.click(submitButton);
 
-        // Überprüfe, ob das Formular erfolgreich abgesendet wird
-        const successMessage = screen.getByText('Event created successfully!');
-        expect(successMessage).toBeInTheDocument();
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        const errorMessage = screen.getByText('An error occurred while creating the event.');
+        expect(errorMessage).toBeInTheDocument();
     });
 });

@@ -1,5 +1,5 @@
 import axios from 'axios';
-import {pool, getEvents} from './database.js';
+import {pool, getEvents, getComments} from './database.js';
 import {AuthenticationError, UserInputError} from "apollo-server-express";
 
 // Geocoding helper function
@@ -54,7 +54,7 @@ export const resolvers = {
                 userId = req.session.user.user_id;
             }
 
-            return getEvents(userId, true);
+            return getEvents(userId, true, -1);
         },
 
         userList: async () => {
@@ -92,7 +92,32 @@ export const resolvers = {
             }
             userId = req.session.user.user_id;
 
-            return getEvents(userId, false);
+            return getEvents(userId, false, -1);
+        },
+
+        getEventDetails: async (_, args, context) => {
+            const { eventId } = args;
+            const { req } = context;
+
+            let userId = -1; // Default to -1 for unauthenticated users
+            if (req.session && req.session.user) {
+                userId = req.session.user.user_id;
+            }
+
+            try {
+                const [eventDetails, comments] = await Promise.all([
+                    getEvents(userId, true, eventId),
+                    getComments(eventId, userId)
+                ]);
+
+                return {
+                    ...eventDetails[0],
+                    comments: comments
+                };
+            } catch (error) {
+                console.error('Error fetching event details:', error);
+                throw new Error('Failed to fetch event details');
+            }
         },
 
         getCities: async (_, args) => {
@@ -117,7 +142,50 @@ export const resolvers = {
                 district: row.district,
                 state: row.state
             }));
-        }
+        },
+        user: async (_, args) => {
+            const query = `SELECT * FROM app_user WHERE user_uri = $1`;
+            const result = await pool.query(query, [args.user_uri]);
+
+            if (result.rows.length === 0) {
+                return null;
+            }
+
+            const user = result.rows[0];
+            return {
+                user_uri: user.user_uri,
+                name: user.username,
+                email: user.email,
+                profilePicture: user.profile_picture_url
+            };
+        },
+        event: async (_, args) => {
+            const { title } = args;
+            const query = `
+                SELECT e.event_id as id,
+                       e.title,
+                       e.address,
+                       e.description,
+                       e.event_date,
+                       u.username as author,
+                       c.name as city_name
+                FROM event e
+                         INNER JOIN app_user u ON e.creator_id = u.user_id
+                         LEFT JOIN city c ON e.city_id = c.city_id
+                WHERE lower(e.title) LIKE lower($1)
+            `;
+
+            const result = await pool.query(query, [`%${title}%`]);
+            return result.rows.map(row => ({
+                id: row.id,
+                title: row.title,
+                address: row.address,
+                date: row.event_date.toLocaleDateString('sv-SE'),
+                author: row.author,
+                description: row.description,
+                city: row.city_name,
+            }));
+        },
     },
 
     Mutation: {
@@ -138,12 +206,11 @@ export const resolvers = {
             if(imageUrl) {
                 const checkQuery = `
                     SELECT true
-                      FROM uploaded_images
-                     WHERE image_url = $1
-                       AND user_id = $2
+                    FROM uploaded_images
+                    WHERE image_url = $1
+                      AND user_id = $2
                 `;
                 const checkResult = await pool.query(checkQuery, [imageUrl, user.user_id]);
-                console.log(checkResult);
             }
 
             let latitude = null;
@@ -317,6 +384,30 @@ export const resolvers = {
             `;
             const result = await pool.query(insertQuery, [eventId, user.user_id, comment]);
             return true;
+        },
+
+        deleteComment: async (_, args, context) => {
+            const { commentId } = args;
+            const { req } = context;
+
+            if (!req.session || !req.session.user) {
+                throw new AuthenticationError('Authentication required. Please log in.');
+            }
+            const user = req.session.user;
+
+            const deleteQuery = `
+                WITH deleted_rows AS (
+                        DELETE FROM event_comment
+                    WHERE comment_id = $1 AND user_id = $2
+                    RETURNING *
+                )
+                SELECT COUNT(*) FROM deleted_rows;
+            `;
+            const result = await pool.query(deleteQuery, [commentId, user.user_id]);
+
+            const deletedCount = parseInt(result.rows[0].count);
+
+            return deletedCount > 0;
         }
     }
 };

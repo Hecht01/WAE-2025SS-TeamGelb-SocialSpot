@@ -7,7 +7,6 @@ vi.mock('$lib/components/EventFeed.svelte', () => ({
     default: vi.fn(() => ({ $$: { fragment: 'mocked-event-feed' } }))
 }));
 
-// Mock fetch
 const mockFetch = vi.fn();
 global.fetch = mockFetch;
 
@@ -270,7 +269,6 @@ describe('UserPage +page.svelte', () => {
     });
 
     it('shows loading state for created events', async () => {
-        // Mock all fetch calls as pending initially
         mockFetch.mockImplementation(() => new Promise(() => {}));
 
         const { container } = render(UserPage);

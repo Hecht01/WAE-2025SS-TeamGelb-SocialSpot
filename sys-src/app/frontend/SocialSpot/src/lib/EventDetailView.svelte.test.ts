@@ -169,7 +169,7 @@ describe('EventDetailView.svelte', () => {
     it('handles missing time gracefully', () => {
         const eventWithoutTime = {
             ...mockEvent,
-            time: '00:00:00' // Provide a valid time instead of undefined
+            time: '00:00:00'
         };
 
         vi.mocked(eventPickedForDetailView.subscribe).mockImplementation((fn) => {
@@ -179,7 +179,6 @@ describe('EventDetailView.svelte', () => {
 
         const { container, getByText } = render(EventDetailView);
 
-        // Should not crash and should display the time
         expect(container).toBeInTheDocument();
         expect(getByText(/00:00/)).toBeInTheDocument();
     });

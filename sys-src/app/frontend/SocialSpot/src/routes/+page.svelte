@@ -13,7 +13,7 @@
             thumbnail: '/exampleOpenMicNight.jpg',
             title: 'Open Mic Night',
             place: 'Amberg - Main Street 123',
-            description: 'Join us for an evening of music, poetry, comedy, and more at our open mic night. Whether you\'re performing or cheering from the crowd, it\'s a fun and welcoming space for all creatives!',
+            description: 'Join us for an evening of music, poetry, comedy, and more at our open mic night. Whether you're performing or cheering from the crowd, it's a fun and welcoming space for all creatives!',
             startDate: '18.05.2025',
             endDate: '18.05.2025',
             startTime: '19:00',
