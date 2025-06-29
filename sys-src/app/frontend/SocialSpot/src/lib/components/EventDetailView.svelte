@@ -2,10 +2,76 @@
     import {eventPickedForDetailView, isOverlayOpen} from "../../stores/OverlayStore";
     import {Heart, MessageCircle} from "lucide-svelte";
     import {createEventActions} from "../../stores/eventInteractions";
+    import {onMount} from "svelte";
 
     const IMAGE_URL = `${import.meta.env.VITE_API_URL || 'http://localhost:4000'}/api/images/`;
+    const GRAPHQL_URL = `${import.meta.env.VITE_API_URL || 'http://localhost:4000'}/graphql`;
 
     let eventActions: any = null;
+    let newComment = '';
+
+    async function loadEventDetails(){
+        if(!$eventPickedForDetailView)return;
+
+        const query = `
+            query GetEventDetails($eventId: ID!){
+            getEventDetails(eventId: $eventId){
+                    id
+                    title
+                    description
+                    date
+                    time
+                    location
+                    address
+                    thumbnail
+                    likeCount
+                    likedByMe
+                    attendCount
+                    likedByMe
+                    attendCount
+                    attendedByMe
+                    commentCount
+                    comments{
+                        id
+                        content
+                        author{
+                            name
+                            profilePicture
+                        }
+                    }
+                }
+            }
+        `;
+        try {
+            const response = await fetch(GRAPHQL_URL, {
+                method: "POST",
+                headers: {'Content-Type': 'application/json'},
+                credentials: 'include',
+                body: JSON.stringify({
+                    query,
+                    variables: {eventId: $eventPickedForDetailView.id}
+                }),
+            });
+            const result = await response.json();
+            if(result.errors){
+                throw new Error(result.errors[0].message);
+            }
+            console.log('Event details loaded:', result.data.getEventDetails);
+            eventPickedForDetailView.set(result.data.getEventDetails);
+        }catch(error){
+            console.error('Failed to load event details', error);
+        }
+    }
+
+    async function handleSumbitComment(){
+        if(!eventActions || !newComment.trim()) return;
+        const success = await eventActions.submitComment(newComment);
+        if(success){
+            newComment = '';
+        }
+    }
+
+
     $: if ($eventPickedForDetailView) {
         eventActions = createEventActions($eventPickedForDetailView);
     }
@@ -14,6 +80,12 @@
     $: isJoined = eventActions?.isJoined;
     $: localLikeCount = eventActions?.localLikeCount;
     $: isLoading = eventActions?.isLoading;
+
+    onMount(() => {
+        if($eventPickedForDetailView) {
+            loadEventDetails();
+        }
+    });
 </script>
 
 {#if $eventPickedForDetailView}
@@ -28,7 +100,7 @@
         role="button"
         tabindex="0"
         on:keydown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
+        if (e.key === 'Escape') {
           isOverlayOpen.set(false);
           eventPickedForDetailView.set(null);
         }
@@ -39,7 +111,7 @@
              role="button"
              tabindex="0"
              on:keydown={(e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
+            if (e.key === 'Escape') {
               isOverlayOpen.set(false);
               eventPickedForDetailView.set(null);
             }
@@ -95,6 +167,47 @@
                         Join
                     {/if}
                 </button>
+
+                <div class="comments-section">
+                    <h3>Comments ({$eventPickedForDetailView.comments?.length || 0})</h3>
+                    <div class="comment-input-area">
+                        <textarea
+                            bind:value={newComment}
+                            placeholder="Write a comment..."
+                            class="w-full p-3 border rounded-lg resize-none"
+                            rows="3"
+                            disabled={$isLoading}
+                        ></textarea>
+                        <button
+                                class="sosp-button-secondary mt-2"
+                                on:click={handleSumbitComment}
+                                disabled={$isLoading || !newComment.trim()}
+                        >
+                            {#if $isLoading}
+                                Posting...
+                            {:else}
+                                Post Comment
+                            {/if}
+                        </button>
+                    </div>
+
+                    <div class="comments-list">
+                        {#if $eventPickedForDetailView.comments && $eventPickedForDetailView.comments.length > 0}
+                            {#each $eventPickedForDetailView.comments as comment}
+                                <div class="comment-item">
+                                    <div class="comment-header">
+                                        <div class="comment-author-info">
+                                            <span class="comment-author-name">{comment.author.name}</span>
+                                        </div>
+                                    </div>
+                                    <p class="comment-content">{comment.content}</p>
+                                </div>
+                            {/each}
+                        {:else}
+                            <p class="no-comments">No comments yet. Be the first to comment!</p>
+                        {/if}
+                    </div>
+                </div>
             </div>
         </div>
     </div>

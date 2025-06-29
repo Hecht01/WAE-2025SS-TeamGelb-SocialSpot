@@ -108,7 +108,8 @@
     flex-direction: column;
     gap: 0.5rem;
     color: #1f1246;
-    height: 100%;
+    flex: 1;
+    overflow-y: auto;
 }
 
 .event-header {
@@ -126,7 +127,7 @@
 .event-box-large {
     width: 100%;
     max-width: 72rem;
-    height: 34rem;
+    height: 90vh;
     border-radius: 1rem;
     overflow: hidden;
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
@@ -230,4 +231,120 @@
 .sosp-navbar-button:hover {
     background-color: rgba(191, 43, 71, 0.1); /* rgb equals #bf2b47 */
     color: #bf2b47;
+}
+
+/* Comment styles */
+.comments-section{
+    margin-top: 1.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid #892246;
+}
+
+.comments-section h3{
+    font-size: 1.125rem;
+    font-weight: bold;
+    color: #541a46;
+    margin-bottom: 1rem;
+}
+
+.comment-input-area{
+    margin-bottom: 1rem;
+}
+
+.comment-textarea{
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #892246;
+    border-radius: 0.5rem;
+    font-size: 0.875rem;
+    resize: none;
+    font-family: inherit;
+    transition: border 0.2s;
+}
+
+.comment-textarea:focus{
+    border-color: #bf2b47;
+    outline: none;
+}
+
+.comment-textarea:diabled{
+    border-color: #fcfcfc;
+    cursor: not-allowed;
+}
+
+.comments-list{
+    max-height: 15rem;
+    overflow-y: auto;
+}
+
+.comment-item{
+    padding-bottom: 0.75rem;
+    margin-bottom: 0.75rem;
+    border-bottom: 1px solid #fcfcfc;
+}
+
+.comment-item:last-child{
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 0;
+}
+
+.comment-header{
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 0.5rem;
+}
+
+.comment-author-info{
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex: 1;
+}
+
+.comment-author-name{
+    font-weight: 600;
+    font-size: 0.875rem;
+    color: #541a46;
+}
+
+.comment-date{
+    font-size: 0.75rem;
+    color: #666
+}
+
+.comment-content{
+    font-size: 0.875rem;
+    color: #1f1246;
+    line-height: 1.4;
+}
+
+.comment-delete-btn{
+    background: none;
+    border: none;
+    color: #bf2b47;
+    font-size: 0.75rem;
+    cursor: pointer;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    transition: background-color 0.15s ease-in-out;
+}
+
+.comment-delete-btn:hover{
+    background-color: rgba(191, 43, 71, 0.1);
+    color: #892246;
+}
+
+.comment-delete-btn:disabled{
+    color: #ccc;
+    cursor: not-allowed;
+}
+
+.no-comments{
+    color: #666;
+    font-size: 0.875rem;
+    font-style: italic;
+    text-align: center;
+    padding: 1rem;
 }

@@ -137,6 +137,42 @@ export function createEventActions(event, onUpdate = null){
     }
 
     return {
-        isLiked, isJoined, localLikeCount, isLoading, toggleLike, toggleJoin
+        isLiked, isJoined, localLikeCount, isLoading, toggleLike, toggleJoin, submitComment
     };
+
+    /**
+     * @param {any} commentText
+     */
+    async function submitComment(commentText){
+        if(!commentText.trim()) return;
+        isLoading.set(true);
+        try{
+            const mutation = `
+                mutation CommentEvent($id: ID!, $comment: String!){
+                    commentEvent(id: $id, comment: $comment)
+                }
+            `;
+            await executeMutation(mutation, {id: event.id, comment: commentText.trim()});
+
+            if(onUpdate){
+                setTimeout(async ()=>{
+                    await onUpdate();
+                }, 500);
+            }
+
+            return true;
+        } catch(error){
+            console.error('Comment submission error:', error);
+            const err =error instanceof Error ? error : new Error(String(error));
+            if(err.message.includes('Authentication required')) {
+                alert('Please log in to comment');
+            } else {
+                alert('Failed to post comment. Please try again');
+            }
+            return false;
+        } finally {
+            isLoading.set(false);
+        }
+    }
+
 }
