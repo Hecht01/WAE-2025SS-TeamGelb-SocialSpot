@@ -369,7 +369,7 @@ export const resolvers = {
         },
 
         commentEvent: async (_, args, context) => {
-            const { eventId, comment } = args;
+            const { id: eventId, comment } = args;
             const { req } = context;
 
             if (!req.session || !req.session.user) {

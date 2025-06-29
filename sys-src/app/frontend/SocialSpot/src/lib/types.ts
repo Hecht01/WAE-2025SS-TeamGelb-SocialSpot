@@ -27,4 +27,13 @@ export interface EventData {
         email: string;
         profilePicture: string;
     };
+    // comments only get used in detailview --> optional
+    comments?: {
+        id: string;
+        content: string;
+        author:{
+            name: string;
+            profilePicture: string;
+        };
+    }[];
 }
