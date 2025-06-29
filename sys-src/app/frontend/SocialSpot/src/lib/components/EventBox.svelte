@@ -80,6 +80,7 @@
         <p class="event-p"><strong>Date:</strong> {event.date}; Time: {event.time?.substring(0,5)}</p>
         <p class="event-p"><strong>Place:</strong> {event.location}</p>
         <p class="event-p truncate"><strong>Description:</strong> {event.description}</p>
+        <p class="event-p"><strong>Created By:</strong> {event.author.name}</p>
         <button
                 class="sosp-button-secondary"
                 on:click={(e) => handleButtonClick(e, eventActions.toggleJoin)}

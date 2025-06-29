@@ -31,6 +31,11 @@
                     attendCount
                     attendedByMe
                     commentCount
+                    author{
+                        user_uri,
+                        name,
+                        email
+                    }
                     comments{
                         id
                         content
@@ -157,6 +162,7 @@
                 <p class="event-p"><strong>Place:</strong> {$eventPickedForDetailView.location}</p>
                 <p class="event-p"><strong>Address:</strong> {$eventPickedForDetailView.address}</p>
                 <p class="event-p"><strong>Description:</strong> {$eventPickedForDetailView.description}</p>
+                <p class="event-p"><strong>Created By:</strong> {$eventPickedForDetailView.author.name}</p>
                 <button
                         class="sosp-button-secondary"
                         on:click={eventActions.toggleJoin}
