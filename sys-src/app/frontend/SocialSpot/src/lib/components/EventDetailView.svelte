@@ -69,6 +69,7 @@
         if(success){
             newComment = '';
         }
+        await loadEventDetails();
     }
 
 
